@@ -2,11 +2,13 @@
 import os
 from netCDF4 import *
 
-def get(path,var,modelname):
+def get(path,modelname):
 	"""imports variables from NetCDF files with specified path and variable name"""
 	os.chdir("../../../../")
 	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
 	alldata = []
 	for filename in os.listdir('./'):
 		testdata = Dataset(filename)
-		print testdata.variables.keys()
+		alldata.append(testdata)
+		print "storing {}".format(filename)
+	return alldata

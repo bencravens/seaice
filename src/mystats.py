@@ -2,7 +2,7 @@
 
 def seasonalmean(var):
 	"""calculates the seasonal mean for a specified netCDF variable"""	
-	pass
+	
 
 def monthlymean(var, startyear, endyear):
 	"""calculates the monthly mean for a specified netCDF variable"""
