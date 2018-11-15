@@ -1,6 +1,7 @@
 """script to import variables from NetCDF files on high capacity storage."""
 import os
 from netCDF4 import *
+import numpy as np
 
 def get(path,modelname):
 	"""imports variables from NetCDF files with specified path and variable name"""
