@@ -16,6 +16,6 @@ def get(path,modelname):
 		testdata = Dataset(filename) #grabbing dataset from file
 		monthstr = filename[19:21] #grabbing month value from filename... format does not vary
 		month = int(monthstr)-1 #chucking dataset into alldata's "month" boxes.. alldata[0] is jan, alldata [1] is feb ect.
-		print monthstr
+		print "Grabbing {}".format(filename)
 		alldata[month].append(testdata)
 	return alldata

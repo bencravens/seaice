@@ -9,7 +9,15 @@ import matplotlib.pyplot as plt
 def main():
 	"""grabbing dataset for model au866"""
 	au866 = grab.get("/media/windowsshare","u-au866")	
-	seasonal_ice_area(au866)
+	ice_area_au866 = seasonal_ice_area(au866)
+	
+	#now plotting 
+	plt.plot(range(1,13),ice_area_au866)
+	plt.ylabel('Ice area (m^2)')
+	plt.xlabel('Months of the year')
+	plt.title('Seasonal')
+	plt.xlim([1,12])
+	plt.show()
 
 def seasonal_ice_area(model_data):
 	"""calculates the mean seasonal ice area for a model. Returns a 1x12 vector
@@ -22,18 +30,18 @@ def seasonal_ice_area(model_data):
 	for i, month in enumerate(model_data):	
 		run_num = len(month) #number of runs per month
 		total_area = 0
+		if (i==0):
+			#simply loading the tarea. It is the same for all models so we simply load it from the first file.
+			tempdata = model_data[0][0]
+			tarea = np.ma.array(tempdata.variables['tarea'][:,:],dtype='float64')
 		for run in month:
-			tarea = np.ma.array(run.variables['tarea'][:,:],dtype='float64')
 			aice = np.ma.squeeze(np.ma.array(run.variables['aice'][:,:],dtype='float64'))
 			total_area += np.ma.sum(aice*tarea)
 		month_mean[i] = (total_area/run_num)
 	
-	#now plotting 
-	plt.plot(month_mean)
-	plt.show()
-	plt.ylabel('Ice area (m^2)')
-	plt.xlabel('Months of the year')
-	plt.title('Seasonal')
+	#returning calculated means
+	return month_mean
 
+	
 if __name__=='__main__':
 	main()
