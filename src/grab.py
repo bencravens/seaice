@@ -12,7 +12,7 @@ def ice_area_seasonal(path,modelname):
 	for filename in os.listdir('./'):
 		filecount +=1
 	#now we will sort the files based on month.
-	monthareas=[[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0]] #THIS IS BUNDY CHANGE IT TO np.zeros(12)
+	monthareas= np.zeros(12)
 	for filenum,filename in enumerate(os.listdir('./')):
 		print filename	
 		testdata = Dataset(filename)
@@ -27,6 +27,6 @@ def ice_area_seasonal(path,modelname):
 		print "area added is {}".format(np.ma.sum(aice*tarea))
 		testdata.close()
 	#now calculating the mean for each month and returning that value
-	for array in monthareas:
-		array /= filecount/12 #we know there is an even amount for each month as we have model runs in whole years
+	for month in monthareas:
+		month /= filecount/12 #we know there is an even amount for each month as we have model runs in whole years
 	return monthareas
