@@ -3,7 +3,7 @@ import os
 from netCDF4 import *
 import numpy as np
 
-def get(path,modelname):
+def ice_area_seasonal(path,modelname):
 	"""imports variables from NetCDF files with specified path and variable name"""
 	os.chdir("../../../../")
 	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
@@ -12,11 +12,21 @@ def get(path,modelname):
 	for filename in os.listdir('./'):
 		filecount +=1
 	#now we will sort the files based on month.
-	alldata=[[],[],[],[],[],[],[],[],[],[],[],[]]
-	for filename in os.listdir('./'):
-		testdata = Dataset(filename) #grabbing dataset from file
-		monthstr = filename[19:21] #grabbing month value from filename... format does not vary
-		month = int(monthstr)-1 #chucking dataset into alldata's "month" boxes.. alldata[0] is jan, alldata [1] is feb ect.
-		print "Grabbing {}".format(filename)
-		alldata[month].append(testdata)
-	return alldata
+	monthareas=[[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0],[0]] #THIS IS BUNDY CHANGE IT TO np.zeros(12)
+	for filenum,filename in enumerate(os.listdir('./')):
+		print filename	
+		testdata = Dataset(filename)
+		#grabbing month value from filename... format does not vary
+		monthstr = filename[19:21]
+		month = int(monthstr)-1
+		print "Grabbing {}, file {} of {}".format(filename,filenum,filecount)
+		aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))
+		tarea = np.ma.array(testdata.variables['tarea'][:,:],dtype='float64')			
+		#adding total ice area into its respective month bin
+		monthareas[month] += np.ma.sum(aice*tarea)
+		print "area added is {}".format(np.ma.sum(aice*tarea))
+		testdata.close()
+	#now calculating the mean for each month and returning that value
+	for array in monthareas:
+		array /= filecount/12 #we know there is an even amount for each month as we have model runs in whole years
+	return monthareas
