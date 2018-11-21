@@ -7,8 +7,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import statistics as stats
 
-def main():
+def ice_area_seasonal_main():
 	"""grabbing dataset for all models, calculating seasonal ice area, plotting."""
 	#timing to see how much numpy speeds up
 	t = time.time()
@@ -16,7 +17,7 @@ def main():
 	#vectorizing plotting routine
 	models = ["at053", "au866", "av231", "au872", "au874"]
 	testmodels = ["at053"]
-	for i, model in enumerate(testmodels):
+	for i, model in enumerate(models):
 		tempstd,tempmean = grab.ice_area_seasonal("/media/windowsshare", "u-{}".format(model))
 		print "the size of tempmean is {}".format(tempmean)
 		print type(tempmean)
@@ -26,6 +27,15 @@ def main():
 	elapsed = time.time() - t
 	print "Elapsed time is {}".format(elapsed)
 	plt.show()
+
+def ice_area_tseries_main():
+	ice_area = grab.ice_area_tseries("/media/windowsshare","u-at053")
+	ice_area_std = stats.stdev(ice_area)
+	plt.plot(ice_area)
+	plt.title("Sea ice area from 1990-2009 for control model")
+	plt.xlabel("Time (months)")
+	plt.ylabel("Total antarctic sea ice area (m^2)")
+	plt.show()	
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs):
 	"""plots a given dataset given inputs, titles and graph labels etc"""
@@ -49,4 +59,5 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs):
 	plt.fill_between(input_x,input_y-std_devs,input_y+std_devs,facecolor='green',alpha=0.2)
 
 if __name__=='__main__':
-	main()
+#	ice_area_tseries_main()
+	ice_area_seasonal_main()

@@ -44,3 +44,26 @@ def ice_area_seasonal(path,modelname):
 
 
 	return stdevs, means
+
+def ice_area_tseries(path,modelname):
+	"""imports variables from NetCDF files with specified path and variable name"""
+	os.chdir("../../../../")
+	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
+	filecount=len(os.listdir('./'))
+	
+	#declaring array to hold ice areas for each timestep
+	ice_area = []
+	
+	#sorting the files and appending the mean of each to an array	
+	for i,filename in enumerate(sorted(os.listdir('./'))):
+		print filename #just making sure we are grabbing files in order...
+		testdata = Dataset(filename)
+		if i==0:
+			tarea = np.ma.array(testdata.variables['tarea'][:,:],dtype='float64')
+		aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64')) 
+		ice_area.append(np.ma.sum(aice*tarea))
+		testdata.close()
+	
+	#Now that we have all of the data we will return it
+	return ice_area
+	
