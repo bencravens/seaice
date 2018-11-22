@@ -16,8 +16,9 @@ def ice_area_seasonal_main():
 
 	#vectorizing plotting routine
 	models = ["at053", "au866", "av231", "au872", "au874"]
-	testmodels = ["at053"]
-	for i, model in enumerate(models):
+	models2 = ["au866","au874","av231","at053","au872"]
+	testmodels = ["au866","at053"]
+	for i, model in enumerate(testmodels):
 		tempstd,tempmean = grab.ice_area_seasonal("/media/windowsshare", "u-{}".format(model))
 		print "the size of tempmean is {}".format(tempmean)
 		print type(tempmean)
@@ -52,11 +53,11 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs):
 	plt.ylim([ymin*0.9,ymax*1.1])
 	
 	#now comes more stuff... adding max/min lines
-	plt.axhline(y=ymax,color='r',linestyle="-")
-	plt.axhline(y=ymin,color='r',linestyle="-")
+	#plt.axhline(y=ymax,color='r',linestyle="-")
+	#plt.axhline(y=ymin,color='r',linestyle="-")
 
 	#now plotting the fill between the mean value +- the standard deviation
-	plt.fill_between(input_x,input_y-std_devs,input_y+std_devs,facecolor='green',alpha=0.2)
+	#plt.fill_between(input_x,input_y-std_devs,input_y+std_devs,facecolor='green',alpha=0.2)
 
 if __name__=='__main__':
 #	ice_area_tseries_main()

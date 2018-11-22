@@ -19,20 +19,21 @@ def ice_area_seasonal(path,modelname):
 	for filenum,filename in enumerate(os.listdir('./')):
 		print filename	
 		testdata = Dataset(filename)
+		#now grabbing latitude just to check if we are in the southern hemisphere (some data is full world)
+		lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
+		cond = lats <= 0 #if we are below the equator, grab
 		if filenum==0:
-			tarea = np.ma.array(testdata.variables['tarea'][:,:],dtype='float64')
-
+			tarea = np.ma.array(testdata.variables['tarea'][:,:],dtype='float64')[cond]
 		#grabbing month value from filename... format does not vary
 		monthstr = filename[19:21]
 		monthnum= int(monthstr)-1
 	
 		print "the month we are grabbing is {}".format(monthstr)
 		print "Grabbing {}, file {} of {}".format(filename,filenum,filecount)
-		aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64')) 
+		aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond] 
 		#adding total ice area into its respective month bin
 		monthareas[monthnum,monthcount[monthnum]] = np.ma.sum(aice*tarea)
 		monthcount[monthnum] =+1	
-
 		print "area added is {}".format(np.ma.sum(aice*tarea))
 		testdata.close()
 		#now converting to numpy array
