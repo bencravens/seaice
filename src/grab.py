@@ -4,6 +4,7 @@ from netCDF4 import *
 import numpy as np
 import statistics as stats
 import pickle
+import sys
 
 def ice_area_seasonal(path,modelname):
 	"""imports variables from NetCDF files with specified path and variable name"""
@@ -16,6 +17,8 @@ def ice_area_seasonal(path,modelname):
 	monthcount = np.zeros(12)	
 	stdevs = np.ma.zeros(12,dtype='float64') 
 	means = np.ma.zeros(12,dtype='float64')
+	maxes = np.ma.zeros(12,dtype='float64')
+	mins = np.ma.zeros(12,dtype='float64')
 	for filenum,filename in enumerate(os.listdir('./')):
 		print filename	
 		testdata = Dataset(filename)
@@ -32,22 +35,33 @@ def ice_area_seasonal(path,modelname):
 		print "Grabbing {}, file {} of {}".format(filename,filenum,filecount)
 		aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond] 
 		#adding total ice area into its respective month bin
-		monthareas[monthnum,monthcount[monthnum]] = np.ma.sum(aice*tarea)
+		#catching weird error as one or two files are invalid
+		try:
+			monthareas[monthnum,monthcount[monthnum]] = np.ma.sum(aice*tarea)
+		except:
+			print "Error:", sys.exc_info()[0]
 		monthcount[monthnum] =+1	
-		print "area added is {}".format(np.ma.sum(aice*tarea))
 		testdata.close()
 		#now converting to numpy array
 	
 	#now calculating the mean for each month and returning that value, as well as the standard deviation for each month.
+	#first masking the mins value correctly so that it does not count "0" entries
+	[x,y] = monthareas.shape	
+	for i in xrange(x):
+		for j in xrange(y):
+			if monthareas[i,j] == 0:
+				monthareas[i,j] = np.ma.masked
+
 	for i in xrange(12):
 		stdevs[i] = np.ma.std(monthareas[i,:])
 		means[i] = np.ma.mean(monthareas[i,:])
+		maxes[i] = np.ma.max(monthareas[i,:])
+		mins[i] = np.ma.min(monthareas[i,:])
 
-
-	return stdevs, means
+	return stdevs, means, maxes, mins
 
 def ice_area_tseries(path,modelname):
-	"""imports variables from NetCDF files with specified path and variable name"""
+	"""makes a time series plot of a certain model """
 	os.chdir("../../../../")
 	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
 	filecount=len(os.listdir('./'))
