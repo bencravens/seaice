@@ -81,4 +81,33 @@ def ice_area_tseries(path,modelname):
 	
 	#Now that we have all of the data we will return it
 	return ice_area
+
+def ice_area_month(path,modelname,monthnum):
+	os.chdir("../../../../")
+	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
+	ice_area = []
+	monthcount = 0
 	
+	for filename in (sorted(os.listdir('./'))):
+		#grabbing month from filename
+		monthstr = filename[19:21]
+		#we only want the files of a certain month given by monthnum
+		if int(monthstr)==monthnum:
+			testdata = Dataset(filename)
+			#want to make sure we are in the southern hemisphere	
+			lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
+			cond = lats<=0 #if out latitude is below the equator...
+			if monthcount == 0:
+				tarea = np.ma.array(testdata.variables['tarea'][:,:],dtype='float64')[cond]
+			aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond] 
+			print "reached fine"
+			print "aice shape is {}".format(aice.shape)
+			print "tarea shape is {}".format(tarea.shape)
+			try:
+				ice_area.append(np.ma.sum(aice*tarea))
+				print "area added is {}".format(np.ma.sum(aice*tarea))
+			except:
+				print "Error:", sys.exc_info()[0]		
+			monthcount += 1 #we have added the data for one month	
+	
+	return ice_area

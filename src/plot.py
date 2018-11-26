@@ -28,12 +28,19 @@ def ice_area_seasonal_main():
 
 def ice_area_tseries_main():
 	ice_area = grab.ice_area_tseries("/media/windowsshare","u-at053")
-	ice_area_std = stats.stdev(ice_area)
 	plt.plot(ice_area)
 	plt.title("Sea ice area from 1990-2009 for control model")
 	plt.xlabel("Time (months)")
 	plt.ylabel("Total antarctic sea ice area (m^2)")
-	plt.show()	
+	plt.show()
+
+def ice_area_month_main():
+	ice_area = grab.ice_area_month("/media/windowsshare","u-at053",9) #grabbing data for feb, (i.e) month=2	
+	plt.plot(ice_area)
+	plt.title("Sea ice area from 1990-2009 for the month of September")
+	plt.xlabel("Years since 1990")
+	plt.ylabel("Total antarctic sea ice area (m^2)")
+	plt.show()
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 	"""plots a given dataset given inputs, titles and graph labels etc"""
@@ -56,4 +63,5 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 
 if __name__=='__main__':
 #	ice_area_tseries_main()
-	ice_area_seasonal_main()
+#	ice_area_seasonal_main()
+	ice_area_month_main()
