@@ -35,11 +35,14 @@ def ice_area_tseries_main():
 	plt.show()
 
 def ice_area_month_main():
-	ice_area = grab.ice_area_month("/media/windowsshare","u-at053",9) #grabbing data for feb, (i.e) month=2	
+	ice_area = grab.ice_area_month("/media/windowsshare","u-at053",2) #grabbing data for feb, (i.e) month=2	
 	plt.plot(ice_area)
-	plt.title("Sea ice area from 1990-2009 for the month of September")
+	plt.title("Sea ice area from 1990-2009 for the month of February")
 	plt.xlabel("Years since 1990")
 	plt.ylabel("Total antarctic sea ice area (m^2)")
+	std_dev = stats.stdev(ice_area)*np.ones(len(ice_area))
+	xvals = np.linspace(0,19,20,dtype='int')
+	plt.fill_between(xvals,ice_area+std_dev,ice_area-std_dev,facecolor='green',alpha=0.2,linestyle="--")
 	plt.show()
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
