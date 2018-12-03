@@ -109,5 +109,36 @@ def ice_area_month(path,modelname,monthnum):
 			except:
 				print "Error:", sys.exc_info()[0]		
 			monthcount += 1 #we have added the data for one month	
-	
 	return ice_area
+
+def ice_area_month_map(path,modelname,monthnum):
+	os.chdir("../../../../")
+	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
+	monthcount = 0
+	for filename in (sorted(os.listdir('./'))):
+		#grabbing month from filename
+		monthstr = filename[19:21]
+		#we only want the files of a certain month given by monthnum
+		if int(monthstr)==monthnum:
+			print "grabbing {}".format(filename)
+			testdata = Dataset(filename)
+			if monthcount == 0: #latitude and longitude of grid cells does not change... also dims of aice dont change
+				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
+				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')
+				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))
+				[x,y] = aice.shape
+				aice_total = np.ma.zeros([x,y]) #making total aice
+				aice_total += aice
+				testdata.close()
+				monthcount += 1
+			else:
+				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))
+				aice_total += aice
+				testdata.close() #making sure we don't have too many files open at once...
+				monthcount += 1 #we have added the data for one month.
+			print aice_total
+	
+	aice_total /= monthcount
+	return lons,lats,aice_total
+
+

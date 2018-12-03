@@ -8,12 +8,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import statistics as stats
+from mpl_toolkits.basemap import Basemap
 
 def ice_area_seasonal_main():
 	"""grabbing dataset for all models, calculating seasonal ice area, plotting."""
-	#timing to see how much numpy speeds up
-	t = time.time()
-
 	#vectorizing plotting routine
 	models = ["at053", "au866", "av231", "au872", "au874"]
 	models2 = ["au866","au874","av231","at053","au872"]
@@ -27,6 +25,7 @@ def ice_area_seasonal_main():
 	plt.show()
 
 def ice_area_tseries_main():
+	"""makes a nice time series plot for ice area of a given model..."""
 	ice_area = grab.ice_area_tseries("/media/windowsshare","u-at053")
 	plt.plot(ice_area)
 	plt.title("Sea ice area from 1990-2009 for control model")
@@ -35,6 +34,7 @@ def ice_area_tseries_main():
 	plt.show()
 
 def ice_area_month_main():
+	"""makes a time series plot of ice area for a given month"""
 	ice_area = grab.ice_area_month("/media/windowsshare","u-at053",2) #grabbing data for feb, (i.e) month=2	
 	plt.plot(ice_area)
 	plt.title("Sea ice area from 1990-2009 for the month of February")
@@ -44,6 +44,21 @@ def ice_area_month_main():
 	xvals = np.linspace(0,19,20,dtype='int')
 	plt.fill_between(xvals,ice_area+std_dev,ice_area-std_dev,facecolor='green',alpha=0.2,linestyle="--")
 	plt.show()
+
+def ice_area_month_map_main(modelname,monthnum):
+	"""function called when regional plots are wanted..."""
+	lons,lats,aice = grab.ice_area_month_map("/media/windowsshare",modelname,monthnum) #grabbing data for feb
+	fig,ax=plt.subplots(figsize=(8,8))
+	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
+	m.drawcoastlines(linewidth=1)
+	m.fillcontinents(color='grey')
+	m.drawmapboundary(linewidth=1)
+	cm = m.pcolormesh(lons,lats,aice,latlon=True)
+	monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}	
+	plt.title("map plot for {} mean ice area in the month of {}".format(modelname,monthdict[monthnum])) 
+	cbar = m.colorbar(cm,location='bottom',pad="5%")
+	cbar.set_label('% ice area in grid cell (0.0-1.0)')
+	fig.savefig('/home/ben/Desktop/mapplots/{}-{}'.format(modelname,monthnum))	
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 	"""plots a given dataset given inputs, titles and graph labels etc"""
@@ -67,4 +82,8 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 if __name__=='__main__':
 #	ice_area_tseries_main()
 #	ice_area_seasonal_main()
-	ice_area_month_main()
+#	ice_area_month_main()
+	models = ["at053", "au866", "av231", "au872", "au874"]
+	for model in models:
+		ice_area_month_map_main("u-{}".format(model),2)
+		ice_area_month_map_main("u-{}".format(model),9)
