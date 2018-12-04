@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import time
 import statistics as stats
 from mpl_toolkits.basemap import Basemap
+import cmocean.cm as cmo
 
 def ice_area_seasonal_main():
 	"""grabbing dataset for all models, calculating seasonal ice area, plotting."""
@@ -46,7 +47,7 @@ def ice_area_month_main():
 	plt.show()
 
 def ice_area_month_map_main(modelname,monthnum):
-	"""function called when regional plots are wanted..."""
+	"""function called when map plots are wanted..."""
 	lons,lats,aice = grab.ice_area_month_map("/media/windowsshare",modelname,monthnum) #grabbing data for feb
 	fig,ax=plt.subplots(figsize=(8,8))
 	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
@@ -59,6 +60,23 @@ def ice_area_month_map_main(modelname,monthnum):
 	cbar = m.colorbar(cm,location='bottom',pad="5%")
 	cbar.set_label('% ice area in grid cell (0.0-1.0)')
 	fig.savefig('/home/ben/Desktop/mapplots/{}-{}'.format(modelname,monthnum))	
+
+def ice_area_month_map_anom_main(modelname,monthnum):
+	"""function called when anomaly map plots are wanted..."""
+	lons,lats,aice = grab.ice_area_month_map_anom("/media/windowsshare",modelname,monthnum) #grabbing data for feb
+	fig,ax=plt.subplots(figsize=(8,8))
+	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
+	m.drawcoastlines(linewidth=1)
+	m.fillcontinents(color='grey')
+	m.drawmapboundary(linewidth=1)
+	cm = m.pcolormesh(lons,lats,aice,latlon=True,cmap='seismic')
+	monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}	
+	plt.title("map plot for mean difference in ice area in the month of {}\n between control model u-at053 and {}".format(monthdict[monthnum],modelname)) 
+	cbar = m.colorbar(cm,location='bottom',pad="5%",cmap=cmo.ice)
+	cbar.set_label('% ice area in grid cell (0.0-1.0)')
+	plt.clim(-1.0,1.0) #we want an absolute scale for the colorbar
+	fig.savefig('/home/ben/Desktop/anomplots/{}-{}'.format(modelname,monthnum))	
+
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 	"""plots a given dataset given inputs, titles and graph labels etc"""
@@ -80,10 +98,8 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 	plt.tight_layout() #making sure the plots do not overlap...
 
 if __name__=='__main__':
-#	ice_area_tseries_main()
-#	ice_area_seasonal_main()
-#	ice_area_month_main()
-	models = ["at053", "au866", "av231", "au872", "au874"]
+	models = ["au866", "av231", "au872", "au874"]
+	testmodels = ["at053"]
 	for model in models:
-		ice_area_month_map_main("u-{}".format(model),2)
-		ice_area_month_map_main("u-{}".format(model),9)
+		ice_area_month_map_anom_main("u-{}".format(model),2)
+		ice_area_month_map_anom_main("u-{}".format(model),9)

@@ -141,4 +141,74 @@ def ice_area_month_map(path,modelname,monthnum):
 	aice_total /= monthcount
 	return lons,lats,aice_total
 
-
+def ice_area_month_map_anom(path,modelname,monthnum):
+	"""this function loads in the control model (u-at053), and makes map plots of average monthly difference between it and a given model for a parameter."""
+	os.chdir("../../../../")
+	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
+	monthcount = 0
+	for filename in (sorted(os.listdir('./'))):
+		#grabbing month from filename
+		monthstr = filename[19:21]
+		#we only want the files of a certain month given by monthnum
+		if int(monthstr)==monthnum:
+			print "grabbing {}".format(filename)
+			testdata = Dataset(filename)
+			if monthcount == 0: #latitude and longitude of grid cells does not change... also dims of aice dont change
+				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
+				cond = lats<-50.0
+				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')[cond]
+				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
+				lats = lats[cond]
+				size = lons.shape[0] #size should be the same for all of them...
+				#now reshaping to be proper size
+				lats = np.reshape(lats,[int(size/360.0),360])
+				lons = np.reshape(lons,[int(size/360.0),360])
+				aice = np.reshape(aice,[int(size/360.0),360])
+				[x,y] = aice.shape
+				aice_total = np.ma.zeros([x,y]) #making total aice
+				aice_total += aice
+				testdata.close()
+				monthcount += 1
+			else:
+				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
+				aice = np.reshape(aice,[int(size/360.0),360])
+				aice_total += aice
+				testdata.close() #making sure we don't have too many files open at once...
+				monthcount += 1 #we have added the data for one month.
+	aice_total /= monthcount
+	
+	#now grabbing control model ice area..
+	os.chdir("../../u-at053/ice/")
+	monthcount = 0
+	for filename in (sorted(os.listdir('./'))):
+		monthstr = filename[19:21]
+		#we only want the files of a certain month given by monthnum
+		if int(monthstr)==monthnum:
+			print "grabbing CONTROL: {}".format(filename)
+			testdata = Dataset(filename)
+			if monthcount == 0: #dims of aice dont change
+				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
+				cond = lats<-50.0
+				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')[cond]
+				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
+				lats = lats[cond]
+				size = lons.shape[0] #size should be the same for all of them...
+				#now reshaping to be proper size
+				lats = np.reshape(lats,[int(size/360.0),360])
+				lons = np.reshape(lons,[int(size/360.0),360])
+				aice = np.reshape(aice,[int(size/360.0),360])
+				[x,y] = aice.shape
+				aice_total_control = np.ma.zeros([x,y]) #making total aice
+				aice_total_control += aice
+				testdata.close()
+				monthcount += 1
+			else:
+				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
+				aice = np.reshape(aice,[int(size/360.0),360])
+				aice_total_control += aice
+				testdata.close() #making sure we don't have too many files open at once...
+				monthcount += 1 #we have added the data for one month.
+	aice_total_control /= monthcount
+	
+	#now returning the lon,lat and anomaly of aice
+	return lons,lats,aice_total_control-aice_total
