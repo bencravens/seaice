@@ -111,7 +111,7 @@ def ice_area_month(path,modelname,monthnum):
 			monthcount += 1 #we have added the data for one month	
 	return ice_area
 
-def ice_area_month_map(path,modelname,monthnum):
+def month_map(path,modelname,monthnum,varname):
 	os.chdir("../../../../")
 	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
 	monthcount = 0
@@ -122,26 +122,24 @@ def ice_area_month_map(path,modelname,monthnum):
 		if int(monthstr)==monthnum:
 			print "grabbing {}".format(filename)
 			testdata = Dataset(filename)
-			if monthcount == 0: #latitude and longitude of grid cells does not change... also dims of aice dont change
+			if monthcount == 0: #latitude and longitude of grid cells does not change... also dims of myvar dont change
 				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
 				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')
-				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))
-				[x,y] = aice.shape
-				aice_total = np.ma.zeros([x,y]) #making total aice
-				aice_total += aice
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))
+				[x,y] = myvar.shape
+				myvar_total = np.ma.zeros([x,y]) #making total myvar
+				myvar_total += myvar
 				testdata.close()
 				monthcount += 1
 			else:
-				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))
-				aice_total += aice
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))
+				myvar_total += myvar
 				testdata.close() #making sure we don't have too many files open at once...
 				monthcount += 1 #we have added the data for one month.
-			print aice_total
-	
-	aice_total /= monthcount
-	return lons,lats,aice_total
+	myvar_total /= monthcount
+	return lons,lats,myvar_total
 
-def ice_area_month_map_anom(path,modelname,monthnum):
+def month_map_anom(path,modelname,monthnum,varname):
 	"""this function loads in the control model (u-at053), and makes map plots of average monthly difference between it and a given model for a parameter."""
 	os.chdir("../../../../")
 	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
@@ -153,31 +151,31 @@ def ice_area_month_map_anom(path,modelname,monthnum):
 		if int(monthstr)==monthnum:
 			print "grabbing {}".format(filename)
 			testdata = Dataset(filename)
-			if monthcount == 0: #latitude and longitude of grid cells does not change... also dims of aice dont change
+			if monthcount == 0: #latitude and longitude of grid cells does not change... also dims of myvar dont change
 				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
-				cond = lats<-50.0
+				cond = lats<-50.0 #we only want stuff near antarctica
 				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')[cond]
-				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
 				lats = lats[cond]
 				size = lons.shape[0] #size should be the same for all of them...
 				#now reshaping to be proper size
 				lats = np.reshape(lats,[int(size/360.0),360])
 				lons = np.reshape(lons,[int(size/360.0),360])
-				aice = np.reshape(aice,[int(size/360.0),360])
-				[x,y] = aice.shape
-				aice_total = np.ma.zeros([x,y]) #making total aice
-				aice_total += aice
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				[x,y] = myvar.shape
+				myvar_total = np.ma.zeros([x,y]) #making total myvar
+				myvar_total += myvar
 				testdata.close()
 				monthcount += 1
 			else:
-				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
-				aice = np.reshape(aice,[int(size/360.0),360])
-				aice_total += aice
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				myvar_total += myvar
 				testdata.close() #making sure we don't have too many files open at once...
 				monthcount += 1 #we have added the data for one month.
-	aice_total /= monthcount
+	myvar_total /= monthcount
 	
-	#now grabbing control model ice area..
+	#now grabbing control model total amount of variable... "gridsize * value at each grid" 
 	os.chdir("../../u-at053/ice/")
 	monthcount = 0
 	for filename in (sorted(os.listdir('./'))):
@@ -186,29 +184,70 @@ def ice_area_month_map_anom(path,modelname,monthnum):
 		if int(monthstr)==monthnum:
 			print "grabbing CONTROL: {}".format(filename)
 			testdata = Dataset(filename)
-			if monthcount == 0: #dims of aice dont change
+			if monthcount == 0: #dims of myvar dont change
 				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
 				cond = lats<-50.0
+				tarea = np.ma.array(testdata.variables['tarea'][:,:],dtype='float64')[cond]
 				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')[cond]
-				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
 				lats = lats[cond]
 				size = lons.shape[0] #size should be the same for all of them...
 				#now reshaping to be proper size
 				lats = np.reshape(lats,[int(size/360.0),360])
 				lons = np.reshape(lons,[int(size/360.0),360])
-				aice = np.reshape(aice,[int(size/360.0),360])
-				[x,y] = aice.shape
-				aice_total_control = np.ma.zeros([x,y]) #making total aice
-				aice_total_control += aice
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				tarea = np.reshape(tarea,[int(size/360.0),360])
+				[x,y] = myvar.shape
+				myvar_total_control = np.ma.zeros([x,y]) #making total myvar
+				myvar_total_control += myvar
 				testdata.close()
 				monthcount += 1
 			else:
-				aice = np.ma.squeeze(np.ma.array(testdata.variables['aice'][:,:],dtype='float64'))[cond]
-				aice = np.reshape(aice,[int(size/360.0),360])
-				aice_total_control += aice
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				myvar_total_control += myvar
 				testdata.close() #making sure we don't have too many files open at once...
 				monthcount += 1 #we have added the data for one month.
-	aice_total_control /= monthcount
+	myvar_total_control /= monthcount
 	
-	#now returning the lon,lat and anomaly of aice
-	return lons,lats,aice_total_control-aice_total
+	#total myvar difference by gridpoint
+	myvar_diff = myvar_total_control - myvar_total
+	#now finding the total difference in m^2
+	total_diff = np.ma.sum(myvar_diff*tarea)
+
+	#now returning the lon,lat and anomaly of myvar
+	return lons,lats,myvar_diff,total_diff
+
+def month_map_variance(path,modelname,monthnum,varname):
+	"""given a path to a model, the name of the model and a number denoting a month, calculate the std_dev of the variable given for that month at each gridpoint"""
+	os.chdir("../../../../")
+	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
+	monthcount = 0
+	varlist = []
+	for filename in (sorted(os.listdir('./'))):
+		#grabbing month from filename
+		monthstr = filename[19:21]
+		#we only want the files of a certain month given by monthnum
+		if int(monthstr)==monthnum:
+			print "grabbing {}".format(filename)
+			testdata = Dataset(filename)
+			if monthcount == 0: #dims of aice dont change
+				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
+				cond = lats<-50.0
+				#now grabbing the variable we want
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
+				size = myvar.shape[0] #size should be the same for all of them...
+				#now reshaping to be proper size
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				varlist.append(myvar)
+				testdata.close()
+				monthcount += 1
+			else:
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				varlist.append(myvar)
+				testdata.close() #making sure we don't have too many files open at once...
+				monthcount += 1 #we have added the data for one month.
+	#now we will calculate the standard deviation of the variable list and return it
+	for item in varlist:
+		print item	

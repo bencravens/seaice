@@ -1,4 +1,6 @@
-"""script file to plot grabbed variables over time"""
+"""script file containing tools for plotting data grabbed from NETCDF4 files"""
+
+#IMPORT LIBRARIES
 import grab
 import grabtest
 import mystats
@@ -10,6 +12,8 @@ import time
 import statistics as stats
 from mpl_toolkits.basemap import Basemap
 import cmocean.cm as cmo
+
+######## ICE AREA SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
 def ice_area_seasonal_main():
 	"""grabbing dataset for all models, calculating seasonal ice area, plotting."""
@@ -46,37 +50,42 @@ def ice_area_month_main():
 	plt.fill_between(xvals,ice_area+std_dev,ice_area-std_dev,facecolor='green',alpha=0.2,linestyle="--")
 	plt.show()
 
-def ice_area_month_map_main(modelname,monthnum):
-	"""function called when map plots are wanted..."""
-	lons,lats,aice = grab.ice_area_month_map("/media/windowsshare",modelname,monthnum) #grabbing data for feb
+############### GENERAL FUNCTIONS FOR MAP PLOTTING ##################################
+
+def month_map_main(modelname,monthnum,varname):
+	"""function called when map plots of variable varname are wanted..."""
+	lons,lats,myvar = grab.month_map("/media/windowsshare",modelname,monthnum,varname) #grabbing data
 	fig,ax=plt.subplots(figsize=(8,8))
 	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
 	m.drawcoastlines(linewidth=1)
 	m.fillcontinents(color='grey')
 	m.drawmapboundary(linewidth=1)
-	cm = m.pcolormesh(lons,lats,aice,latlon=True)
+	cm = m.pcolormesh(lons,lats,myvar,latlon=True)
 	monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}	
-	plt.title("map plot for {} mean ice area in the month of {}".format(modelname,monthdict[monthnum])) 
+	plt.title("map plot for {} mean {} in the month of {}".format(modelname,varname,monthdict[monthnum])) 
 	cbar = m.colorbar(cm,location='bottom',pad="5%")
-	cbar.set_label('% ice area in grid cell (0.0-1.0)')
-	fig.savefig('/home/ben/Desktop/mapplots/{}-{}'.format(modelname,monthnum))	
+	cbar.set_label('{} in grid cell'.format(varname))
+	fig.savefig('/home/ben/Desktop/mapplots/{}-{}-{}'.format(modelname,varname,monthnum))	
 
-def ice_area_month_map_anom_main(modelname,monthnum):
-	"""function called when anomaly map plots are wanted..."""
-	lons,lats,aice = grab.ice_area_month_map_anom("/media/windowsshare",modelname,monthnum) #grabbing data for feb
+def month_map_anom_main(modelname,monthnum,varname):
+	"""function called when anomaly map plots of variable varname are wanted..."""
+	lons,lats,myvar,total_diff = grab.month_map_anom("/media/windowsshare",modelname,monthnum,varname) #grabbing data
 	fig,ax=plt.subplots(figsize=(8,8))
 	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
 	m.drawcoastlines(linewidth=1)
 	m.fillcontinents(color='grey')
 	m.drawmapboundary(linewidth=1)
-	cm = m.pcolormesh(lons,lats,aice,latlon=True,cmap='seismic')
+	cm = m.pcolormesh(lons,lats,myvar,latlon=True,cmap='seismic')
 	monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}	
-	plt.title("map plot for mean difference in ice area in the month of {}\n between control model u-at053 and {}".format(monthdict[monthnum],modelname)) 
-	cbar = m.colorbar(cm,location='bottom',pad="5%",cmap=cmo.ice)
-	cbar.set_label('% ice area in grid cell (0.0-1.0)')
-	plt.clim(-1.0,1.0) #we want an absolute scale for the colorbar
-	fig.savefig('/home/ben/Desktop/anomplots/{}-{}'.format(modelname,monthnum))	
+	plt.title("Control - {} in the month of {} \n variable plotted is {} \n total difference is {}".format(modelname, monthdict[monthnum],varname,total_diff)) 
+	cbar = m.colorbar(cm,location='bottom',pad="5%")
+	cbar.set_label('change in variable {}'.format(varname))
+	plt.clim(-1.0,1.0) #one may have to adjust clim depending on variable...
+	fig.savefig('/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname,varname,monthnum))	
 
+def month_map_variance_main(modelname,monthnum,myvar):
+	"""plots the variance of a seasonal variable myvar for a given model and month"""
+	grab.month_map_variance("/media/windowsshare",modelname,monthnum,myvar)
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 	"""plots a given dataset given inputs, titles and graph labels etc"""
@@ -97,9 +106,6 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 	plt.fill_between(input_x,input_y-std_devs,input_y+std_devs,facecolor='green',alpha=0.2,linestyle="--")
 	plt.tight_layout() #making sure the plots do not overlap...
 
+
 if __name__=='__main__':
-	models = ["au866", "av231", "au872", "au874"]
-	testmodels = ["at053"]
-	for model in models:
-		ice_area_month_map_anom_main("u-{}".format(model),2)
-		ice_area_month_map_anom_main("u-{}".format(model),9)
+	month_map_anom_main("u-au866",2,'aice')
