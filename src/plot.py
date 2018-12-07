@@ -12,6 +12,8 @@ import time
 import statistics as stats
 from mpl_toolkits.basemap import Basemap
 import cmocean.cm as cmo
+import scipy
+from scipy import stats
 
 ######## ICE AREA SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
@@ -52,9 +54,9 @@ def ice_area_month_main():
 
 ############### GENERAL FUNCTIONS FOR MAP PLOTTING ##################################
 
-def month_map_main(modelname,monthnum,varname):
-	"""function called when map plots of variable varname are wanted..."""
-	lons,lats,myvar = grab.month_map("/media/windowsshare",modelname,monthnum,varname) #grabbing data
+def month_map_mean_main(modelname,monthnum,varname):
+	"""function called when map plots of mean of variable varname are wanted..."""
+	lons,lats,myvar = grab.month_map_mean("/media/windowsshare",modelname,monthnum,varname) #grabbing data
 	fig,ax=plt.subplots(figsize=(8,8))
 	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
 	m.drawcoastlines(linewidth=1)
@@ -83,10 +85,60 @@ def month_map_anom_main(modelname,monthnum,varname):
 	plt.clim(-1.0,1.0) #one may have to adjust clim depending on variable...
 	fig.savefig('/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname,varname,monthnum))	
 
-def month_map_variance_main(modelname,monthnum,myvar):
+def month_map_variance_main(modelname,monthnum,varname):
 	"""plots the variance of a seasonal variable myvar for a given model and month"""
-	grab.month_map_variance("/media/windowsshare",modelname,monthnum,myvar)
+	lons, lats, myvar = grab.month_map_stddev("/media/windowsshare",modelname,monthnum,varname)
+	fig,ax=plt.subplots(figsize=(8,8))
+	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
+	m.drawcoastlines(linewidth=1)
+	m.fillcontinents(color='grey')
+	m.drawmapboundary(linewidth=1)
+	cm = m.pcolormesh(lons,lats,np.multiply(myvar,myvar),latlon=True,cmap='Blues') #doing np.multiply to get the variance, which is the square of the std-dev
+	monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}	
+	plt.title("variance of {} for model {} in the month of {}".format(varname, modelname,monthdict[monthnum])) 
+	cbar = m.colorbar(cm,location='bottom',pad="5%")
+	cbar.set_label('variance in variable {}'.format(varname))
+	fig.savefig('/home/ben/Desktop/varplots/{}-{}-{}'.format(modelname,varname,monthnum))	
 
+def t_test_main(modelname,monthnum,varname,pval_filter,t_or_p):
+	"""performs the student's t-test on each gridpoint. if t_or_p is true, plots the t-statistic scalar field, else plots the p value."""
+	lons,lats,myvar = grab.month_map_data("/media/windowsshare",modelname,monthnum,varname)
+	lons,lats,controlvar = grab.month_map_data("/media/windowsshare","u-at053",monthnum,varname)
+
+	#now performing the t-test
+	#myvar and controlvar should be the same shape
+	assert controlvar.shape == myvar.shape
+	[z,x,y] = myvar.shape
+	
+	#now making an empty array to chuck results into
+	tstats = np.ma.zeros([x,y])
+	pvals = np.ma.zeros([x,y])
+	for i in xrange(x):
+		for j in xrange(y):
+			tstats[i,j], pvals[i,j] = scipy.stats.mstats.ttest_ind(controlvar[:,i,j],myvar[:,i,j])
+	
+	tstats = np.ma.masked_where(pvals>pval_filter,tstats)
+	fig,ax=plt.subplots(figsize=(8,8))
+	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
+	m.drawcoastlines(linewidth=1)
+	#m.fillcontinents(color='grey')
+	m.drawlsmask(land_color='grey',ocean_color='aqua',lakes=True)
+	m.drawmapboundary(linewidth=1)
+	if t_or_p:
+		cm = m.pcolormesh(lons,lats,tstats,latlon=True,cmap='seismic')
+		monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}			
+		plt.title("tstatistic of {} for model {} in the month of {}\n plotted where pval <{}".format(varname, modelname,monthdict[monthnum],pval_filter)) 
+		cbar = m.colorbar(cm,location='bottom',pad="5%")
+		cbar.set_label('tstatistic of {}'.format(varname))
+		fig.savefig('/home/ben/Desktop/tstatplots/{}-{}-{}_tstat'.format(modelname,varname,monthnum))	
+	else:
+		cm = m.pcolormesh(lons,lats,pvals,latlon=True,cmap='seismic')
+		monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}	
+		plt.title("pvalues of {} for model {} in the month of {}".format(varname, modelname,monthdict[monthnum])) 
+		cbar = m.colorbar(cm,location='bottom',pad="5%")
+		cbar.set_label('pvalues of {}'.format(varname))
+		fig.savefig('/home/ben/Desktop/tstatplots/{}-{}-{}_pval'.format(modelname,varname,monthnum))	
+	
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 	"""plots a given dataset given inputs, titles and graph labels etc"""
 	plt.subplot(plotarr[0],plotarr[1], plotarr[2])
@@ -108,4 +160,9 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 
 
 if __name__=='__main__':
-	month_map_anom_main("u-au866",2,'aice')
+	models = ["u-au866","u-av231","u-au872","u-au874","u-at053"]
+	months = [2,9]
+	for model in models:
+		for month in months:
+			t_test_main(model,month,"aice",1.0,False)
+			t_test_main(model,month,"aice",0.05,True)	

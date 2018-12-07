@@ -111,7 +111,7 @@ def ice_area_month(path,modelname,monthnum):
 			monthcount += 1 #we have added the data for one month	
 	return ice_area
 
-def month_map(path,modelname,monthnum,varname):
+def month_map_mean(path,modelname,monthnum,varname):
 	os.chdir("../../../../")
 	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
 	monthcount = 0
@@ -218,7 +218,7 @@ def month_map_anom(path,modelname,monthnum,varname):
 	#now returning the lon,lat and anomaly of myvar
 	return lons,lats,myvar_diff,total_diff
 
-def month_map_variance(path,modelname,monthnum,varname):
+def month_map_stddev(path,modelname,monthnum,varname):
 	"""given a path to a model, the name of the model and a number denoting a month, calculate the std_dev of the variable given for that month at each gridpoint"""
 	os.chdir("../../../../")
 	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
@@ -235,10 +235,14 @@ def month_map_variance(path,modelname,monthnum,varname):
 				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
 				cond = lats<-50.0
 				#now grabbing the variable we want
+				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')[cond]
 				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
+				lats = lats[cond]
 				size = myvar.shape[0] #size should be the same for all of them...
 				#now reshaping to be proper size
 				myvar = np.reshape(myvar,[int(size/360.0),360])
+				lats = np.reshape(lats,[int(size/360.0),360])
+				lons = np.reshape(lons,[int(size/360.0),360])
 				varlist.append(myvar)
 				testdata.close()
 				monthcount += 1
@@ -248,6 +252,45 @@ def month_map_variance(path,modelname,monthnum,varname):
 				varlist.append(myvar)
 				testdata.close() #making sure we don't have too many files open at once...
 				monthcount += 1 #we have added the data for one month.
+
 	#now we will calculate the standard deviation of the variable list and return it
-	for item in varlist:
-		print item	
+	varlist = np.asarray(varlist)
+	return lons,lats,np.std(varlist,axis=0)	
+
+def month_map_data(path,modelname,monthnum,varname):
+	"""grabs and returns a stack of arrays for the value of varname for model modelname during a given month"""
+	os.chdir("../../../../")
+	os.chdir("{}/{}/{}".format(path,modelname,"ice"))
+	monthcount = 0
+	varlist = []
+	for filename in (sorted(os.listdir('./'))):
+		#grabbing month from filename
+		monthstr = filename[19:21]
+		#we only want the files of a certain month given by monthnum
+		if int(monthstr)==monthnum:
+			print "grabbing {}".format(filename)
+			testdata = Dataset(filename)
+			if monthcount == 0: #dims of aice dont change
+				lats = np.ma.array(testdata.variables['TLAT'][:,:],dtype='float64')
+				cond = lats<-50.0
+				#now grabbing the variable we want
+				lons = np.ma.array(testdata.variables['TLON'][:,:],dtype='float64')[cond]
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
+				lats = lats[cond]
+				size = myvar.shape[0] #size should be the same for all of them...
+				#now reshaping to be proper size
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				lats = np.reshape(lats,[int(size/360.0),360])
+				lons = np.reshape(lons,[int(size/360.0),360])
+				varlist.append(myvar)
+				testdata.close()
+				monthcount += 1
+			else:
+				myvar = np.ma.squeeze(np.ma.array(testdata.variables[str(varname)][:,:],dtype='float64'))[cond]
+				myvar = np.reshape(myvar,[int(size/360.0),360])
+				varlist.append(myvar)
+				testdata.close() #making sure we don't have too many files open at once...
+				monthcount += 1 #we have added the data for one month.
+
+	varlist = np.asarray(varlist)
+	return lons,lats,varlist	
