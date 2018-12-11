@@ -4,9 +4,9 @@
 import grab
 import numpy as np
 import matplotlib.pyplot as plt
+import statistics as stats
 from mpl_toolkits.basemap import Basemap
 import scipy
-from scipy import stats
 
 ######## ICE AREA SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
@@ -15,9 +15,9 @@ def ice_area_seasonal_main():
     #vectorizing plotting routine
     models = ["at053", "au866", "av231", "au872", "au874"]
     for i, model in enumerate(models):
-    	tempstd,tempmean,tempmax,tempmin = grab.ice_area_seasonal("/media/windowsshare", "u-{}".format(model))
-    	print "the minimum areas are {}".format(tempmin)
-    	plot(range(1,13),tempmean,'Months of the year','Sea ice area (m^2)', '{} - Seasonal'.format(model),[3,2,i+1],tempstd,tempmax,tempmin)
+        tempstd,tempmean,tempmax,tempmin = grab.ice_area_seasonal("/media/windowsshare", "u-{}".format(model))
+        print "the minimum areas are {}".format(tempmin)
+        plot(range(1,13),tempmean,'Months of the year','Sea ice area (m^2)', '{} - Seasonal'.format(model),[3,2,i+1],tempstd,tempmax,tempmin)
     plt.show()
 
 def ice_area_tseries_main():
@@ -103,8 +103,8 @@ def t_test_main(modelname,monthnum,varname,pval_filter,t_or_p):
     tstats = np.ma.zeros([x,y])
     pvals = np.ma.zeros([x,y])
     for i in xrange(x):
-		for j in xrange(y):
-			tstats[i,j], pvals[i,j] = scipy.stats.mstats.ttest_ind(controlvar[:,i,j],modelvar[:,i,j])
+        for j in xrange(y):
+            tstats[i,j], pvals[i,j] = scipy.stats.mstats.ttest_ind(controlvar[:,i,j],modelvar[:,i,j])
 
     tstats = np.ma.masked_where(pvals>pval_filter,tstats)
     fig,ax=plt.subplots(figsize=(8,8))
@@ -113,69 +113,42 @@ def t_test_main(modelname,monthnum,varname,pval_filter,t_or_p):
     m.drawlsmask(land_color='grey',ocean_color='aqua',lakes=True)
     m.drawmapboundary(linewidth=1)
     if t_or_p:
-		cm = m.pcolormesh(lons,lats,tstats,latlon=True,cmap='seismic')
-		monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}
-		plt.title("tstatistic of {} for model {} in the month of {}\n plotted where pval <{}".format(varname, modelname,monthdict[monthnum],pval_filter))
-		cbar = m.colorbar(cm,location='bottom',pad="5%")
-		cbar.set_label('tstatistic of {}'.format(varname))
-		fig.savefig('/home/ben/Desktop/tstatplots/{}-{}-{}_tstat'.format(modelname,varname,monthnum))
+        cm = m.pcolormesh(lons,lats,tstats,latlon=True,cmap='seismic')
+        monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}
+        plt.title("tstatistic of {} for model {} in the month of {}\n plotted where pval <{}".format(varname, modelname,monthdict[monthnum],pval_filter))
+        cbar = m.colorbar(cm,location='bottom',pad="5%")
+        cbar.set_label('tstatistic of {}'.format(varname))
+        fig.savefig('/home/ben/Desktop/tstatplots/{}-{}-{}_tstat'.format(modelname,varname,monthnum))
     else:
 		cm = m.pcolormesh(lons,lats,pvals,latlon=True,cmap='seismic')
-		monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}
-		plt.title("pvalues of {} for model {} in the month of {}".format(varname, modelname,monthdict[monthnum]))
-		cbar = m.colorbar(cm,location='bottom',pad="5%")
-		cbar.set_label('pvalues of {}'.format(varname))
-		fig.savefig('/home/ben/Desktop/tstatplots/{}-{}-{}_pval'.format(modelname,varname,monthnum))
+        monthdict={1:'Jan', 2:'Feb', 3:'Mar', 4:'Apr', 5:'May', 6:'Jun', 7:'Jul', 8:'Aug', 9:'Sep', 10:'Oct', 11:'Nov', 12:'Dec'}
+        plt.title("pvalues of {} for model {} in the month of {}".format(varname, modelname,monthdict[monthnum]))
+        cbar = m.colorbar(cm,location='bottom',pad="5%")
+        cbar.set_label('pvalues of {}'.format(varname))
+        fig.savefig('/home/ben/Desktop/tstatplots/{}-{}-{}_pval'.format(modelname,varname,monthnum))
 
-def t_test_area_main(modelname,monthnum,varname,latrange,lonrange):
-	"""performs the student's t-test on a given rectangular feature area.
-	compares with control model u-at053 by stripping points in selected area of
-	spatial property and treats them as a sequence of data. plots the selected area as a 
-	method of double checking, and then writes the result of each t-test to a file ttests.txt""" 
-	lons,lats,modelvar = grab.month_map_mean("/media/windowsshare",modelname,monthnum,varname)
-	lons1,lats1,controlvar = grab.month_map_mean("/media/windowsshare","u-at053",monthnum,varname)
+def t_test_area_main(modelname,monthnum,varname,pval_filter,t_or_p,latrange,lonrange):
+    """performs the student's t-test on a given rectangular feature area.
+    compares with control model u-at053 by stripping points in selected area of
+    spatial property and treats them as a sequence of data. returns [tstat,pval].
+    also plots the selected area on a map with [tstat,pval] in title and saves figure locally."""
+    lons,lats,modelvar = grab.month_map_mean("/media/windowsshare",modelname,monthnum,varname)
+    #now only keeping data within given latitude and longitude range...
 	latmin = latrange[0]
 	latmax = latrange[1]
 	lonmin = lonrange[0]
 	lonmax = lonrange[1]
-	
-	#making a mask so that we only plot the values which fall inside the bounded range for the model
-	latcond = np.logical_or(lats<latmin,lats>latmax)
-	loncond = np.logical_or(lons<lonmin,lons>lonmax)
-	cond = np.logical_or(latcond,loncond)
-	#now doing it for the control 
-	latcond1 = np.logical_or(lats1<latmin,lats1>latmax)
-	loncond1 = np.logical_or(lons1<lonmin,lons1>lonmax)
-	cond1 = np.logical_or(latcond1,loncond1)
-	#now masking the out of bounds values
-	modelvar_masked = np.ma.masked_where(cond,modelvar)
-	controlvar_masked = np.ma.masked_where(cond1,controlvar)
-
-	#now we will plot these to see if they make sense
+	latcond = np.logical_and(lats<latmin,lats>latmax)
+	loncond = np.logical_and(lons<lonmin,lons>lonmax)
+	cond = np.logical_and(latcond,loncond)
+	modelvar = np.ma.masked_where(cond,modelvar)
 	fig,ax=plt.subplots(figsize=(8,8))
 	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
 	m.drawcoastlines(linewidth=1)
 	m.drawlsmask(land_color='grey',ocean_color='aqua',lakes=True)
 	m.drawmapboundary(linewidth=1)
-	cm = m.pcolormesh(lons,lats,modelvar_masked,latlon=True,cmap='Reds')
-	plt.title("{} in selected area for {}".format(varname,modelname))
+	cm = m.pcolormesh(lons,lats,modelvar,latlon=True,cmap='Reds')
 	plt.show()
-	cm = m.pcolormesh(lons1,lats1,controlvar_masked,latlon=True,cmap='Reds')
-	m = Basemap(resolution='h',projection='spstere',lat_0=-90,lon_0=-180,boundinglat=-55)
-	m.drawcoastlines(linewidth=1)
-	m.drawlsmask(land_color='grey',ocean_color='aqua',lakes=True)
-	m.drawmapboundary(linewidth=1)
-	plt.title("{} in selected area for {}".format(varname,"u-at053"))
-	plt.show()
-
-	#now that we've done that, it's time to do the area-wise t-test.
-	#first stripping modelvar and controlvar of sparial data.. converting them into a sequence
-	#now we want the entries which do NOT match the prior condition of being outside of the selected area. 
-	modelvar_seq = modelvar[np.logical_not(cond)]
-	controlvar_seq = controlvar[np.logical_not(cond1)]
-	#now finally performing the t-test and printing the results.
-	[tstat,pval] = scipy.stats.ttest_ind(modelvar_seq,controlvar_seq)
-	print "Results of area-wide t-test for {}: tstat {}, pval {}".format(modelname,tstat,pval)
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
     """plots a given dataset given inputs, titles and graph labels etc"""
@@ -200,7 +173,7 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 if __name__=='__main__':
     allmodels = ["u-au866","u-av231","u-au872","u-au874","u-at053"]
     mymodel=["u-au866"]
-    months = [2]
+    months = [2,9]
     for model in mymodel:
-    	for month in months:
-    		t_test_area_main(model,month,"aice",[-86.53,-69.73],[160,230])
+        for month in months:
+            t_test_area_main(model,month,"aice",1.0,True,[-70.0,-68.0],[177.0,179.0])
