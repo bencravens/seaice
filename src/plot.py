@@ -7,18 +7,27 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import scipy
 from scipy import stats
+import os
 
 ######## ICE AREA SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
 def ice_area_seasonal_main():
-    """grabbing dataset for all models, calculating seasonal ice area, plotting."""
-    #vectorizing plotting routine
-    models = ["at053", "au866", "av231", "au872", "au874"]
-    for i, model in enumerate(models):
-    	tempstd,tempmean,tempmax,tempmin = grab.ice_area_seasonal("/media/windowsshare", "u-{}".format(model))
-    	print "the minimum areas are {}".format(tempmin)
-    	plot(range(1,13),tempmean,'Months of the year','Sea ice area (m^2)', '{} - Seasonal'.format(model),[3,2,i+1],tempstd,tempmax,tempmin)
-    plt.show()
+	"""grabbing dataset for all models, calculating seasonal ice area, plotting."""
+	#vectorizing plotting routine
+	models = ["at053", "au866", "av231", "au872", "au874"]
+	for i, model in enumerate(models):
+		tempstd,tempmean,tempmax,tempmin = grab.ice_area_seasonal("/media/windowsshare", "u-{}".format(model))
+		print "the minimum areas are {}".format(tempmin)
+		fig,ax=plt.subplots(figsize=(8,8))
+		plt.plot(range(1,13),tempmean)
+		plt.xlabel('Months of the year')
+		plt.ylabel('Sea ice area (m^2)')
+		plt.title('{} - Seasonal'.format(model))
+		plt.fill_between(range(1,13),tempmean-tempstd,tempmean+tempstd,facecolor='green',alpha=0.2,linestyle="--")
+		plt.tight_layout() #making sure the plots do not overlap...
+		plt.show()
+		fig.savefig('/home/ben/Desktop/seasonal/{}-seasonal'.format(model))
+
 
 def ice_area_tseries_main():
     """makes a nice time series plot for ice area of a given model..."""
@@ -127,11 +136,12 @@ def t_test_main(modelname,monthnum,varname,pval_filter,t_or_p):
 		cbar.set_label('pvalues of {}'.format(varname))
 		fig.savefig('/home/ben/Desktop/tstatplots/{}-{}-{}_pval'.format(modelname,varname,monthnum))
 
-def t_test_area_main(modelname,monthnum,varname,latrange,lonrange):
+def t_test_area_main(modelname,monthnum,varname,latrange,lonrange,outputdir):
 	"""performs the student's t-test on a given rectangular feature area.
 	compares with control model u-at053 by stripping points in selected area of
 	spatial property and treats them as a sequence of data. plots the selected area as a 
-	method of double checking, and then writes the result of each t-test to a file ttests.txt""" 
+	method of double checking, and then writes the result of each t-test to a file ttests.txt
+	in directory given by outputdir""" 
 	lons,lats,modelvar = grab.month_map_mean("/media/windowsshare",modelname,monthnum,varname)
 	lons1,lats1,controlvar = grab.month_map_mean("/media/windowsshare","u-at053",monthnum,varname)
 	latmin = latrange[0]
@@ -170,12 +180,19 @@ def t_test_area_main(modelname,monthnum,varname,latrange,lonrange):
 
 	#now that we've done that, it's time to do the area-wise t-test.
 	#first stripping modelvar and controlvar of sparial data.. converting them into a sequence
+	
 	#now we want the entries which do NOT match the prior condition of being outside of the selected area. 
 	modelvar_seq = modelvar[np.logical_not(cond)]
 	controlvar_seq = controlvar[np.logical_not(cond1)]
+	
 	#now finally performing the t-test and printing the results.
 	[tstat,pval] = scipy.stats.ttest_ind(modelvar_seq,controlvar_seq)
 	print "Results of area-wide t-test for {}: tstat {}, pval {}".format(modelname,tstat,pval)
+	
+	#now writing output to file 
+	file = open("{}/ttest_{}_{}.txt".format(outputdir,modelname,varname), "w") 
+	file.write("Results of area-wide t-test for {}: tstat {}, pval {}".format(modelname,tstat,pval)) 
+	file.close() 
 
 def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
     """plots a given dataset given inputs, titles and graph labels etc"""
@@ -198,9 +215,9 @@ def plot(input_x,input_y,xlab,ylab,title,plotarr,std_devs,maxes,mins):
 
 
 if __name__=='__main__':
-    allmodels = ["u-au866","u-av231","u-au872","u-au874","u-at053"]
-    mymodel=["u-au866"]
-    months = [2]
-    for model in mymodel:
-    	for month in months:
-    		t_test_area_main(model,month,"aice",[-86.53,-69.73],[160,230])
+	models = ["u-au866","u-au872","u-au874","u-av231"]
+	months = [2]
+	for model in models:
+		for month in months:
+			t_test_area_main(model,month,"aice",[-86.53,-63.73],[160,230],"/home/ben/Documents/summer2019")
+
