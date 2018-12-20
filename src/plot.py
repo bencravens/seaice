@@ -8,6 +8,7 @@ from mpl_toolkits.basemap import Basemap
 import scipy
 from scipy import stats
 import os
+import sys
 
 ######## ICE AREA SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
@@ -67,7 +68,7 @@ def month_map_mean_main(modelname, monthnum, varname):
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawcoastlines(linewidth=1)
-    m.fillcontinents(color='grey')
+    m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
     m.drawmapboundary(linewidth=1)
     cm = m.pcolormesh(lons, lats, myvar, latlon=True)
     monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
@@ -78,7 +79,7 @@ def month_map_mean_main(modelname, monthnum, varname):
     cbar.set_label('{} in grid cell'.format(varname))
     fig.savefig(
         '/home/ben/Desktop/mapplots/{}-{}-{}'.format(modelname, varname, monthnum))
-
+    plt.close()
 
 def month_map_anom_main(modelname, monthnum, varname):
     """function called when anomaly map plots of variable varname are wanted..."""
@@ -88,19 +89,19 @@ def month_map_anom_main(modelname, monthnum, varname):
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawcoastlines(linewidth=1)
-    m.fillcontinents(color='grey')
     m.drawmapboundary(linewidth=1)
+    m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
     cm = m.pcolormesh(lons, lats, myvar, latlon=True, cmap='seismic')
     monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
                  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-    plt.title("Control - {} in the month of {} \n variable plotted is {} \n total difference is {}".format(
+    plt.title("{} - Control in the month of {} \n variable plotted is {} \n total difference is {}".format(
         modelname, monthdict[monthnum], varname, total_diff))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
     cbar.set_label('change in variable {}'.format(varname))
     plt.clim(-1.0, 1.0)  # one may have to adjust clim depending on variable...
     fig.savefig(
         '/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname, varname, monthnum))
-
+    plt.close()
 
 def month_map_variance_main(modelname, monthnum, varname):
     """plots the variance of a seasonal variable myvar for a given model and month"""
@@ -239,6 +240,44 @@ def t_test_area_main(modelname, monthnum, varname, latrange, lonrange, outputdir
         "Results of area-wide t-test for {}: tstat {}, pval {}".format(modelname, tstat, pval))
     file.close()
 
+def scatterplot_area_main(modelname, monthnum, varname, latrange, lonrange, outputdir):
+    """ visually compares modelname with control model u-at053 by stripping points in selected area of
+    spatial property and treats them as a sequence of data. Then creates a scatterplot of the two arrays
+    and saves figure in a given output directory outputdir"""
+    lons, lats, modelvar = grab.month_map_mean(
+        "/media/windowsshare", modelname, monthnum, varname)
+    lons1, lats1, controlvar = grab.month_map_mean(
+        "/media/windowsshare", "u-at053", monthnum, varname)
+    latmin = latrange[0]
+    latmax = latrange[1]
+    lonmin = lonrange[0]
+    lonmax = lonrange[1]
+
+    # making a mask so that we only plot the values which fall inside the bounded range for the model
+    latcond = np.logical_or(lats < latmin, lats > latmax)
+    loncond = np.logical_or(lons < lonmin, lons > lonmax)
+    cond = np.logical_or(latcond, loncond)
+    # now doing it for the control
+    latcond1 = np.logical_or(lats1 < latmin, lats1 > latmax)
+    loncond1 = np.logical_or(lons1 < lonmin, lons1 > lonmax)
+    cond1 = np.logical_or(latcond1, loncond1)
+    # now masking the out of bounds values
+    modelvar_masked = np.ma.masked_where(cond, modelvar)
+    controlvar_masked = np.ma.masked_where(cond1, controlvar)
+
+    # first stripping modelvar and controlvar of spatial data.. converting them into a sequence
+    # now we want the entries which do NOT match the prior condition of being outside of the selected area.
+    modelvar_seq = modelvar[np.logical_not(cond)]
+    controlvar_seq = controlvar[np.logical_not(cond1)]
+    
+    #now making scatter plot
+    fig, ax = plt.subplots(figsize=(8, 8))
+    plt.scatter(modelvar_seq,controlvar_seq)
+    plt.title("scatterplot comparing variable {} for {} with control".format(varname,modelname))
+    plt.xlabel(modelname)
+    plt.ylabel("u-at053")
+    plt.show()
+    fig.savefig("{}/{}-{}-{}-scatter.png".format(outputdir,modelname,varname,monthnum))
 
 def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     """plots a given dataset given inputs, titles and graph labels etc"""
@@ -262,9 +301,16 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
 
 
 if __name__ == '__main__':
+    control = ["u-at053"]
     models = ["u-au866", "u-au872", "u-au874", "u-av231"]
-    months = [2]
+    months = [2,9]
+    myvars = ["aice", "sithick", "ardg","fhocn_ai","fsurf_ai","siflcondbot","siflcondtop","siflsensupbot","siflswdbot","sihc","sispeed"]
+#    for month in months:
+#        for var in myvars:
+#            #first grabbing the mean plot for control
+#            month_map_mean_main(
+#                control[0], month,var)
     for model in models:
         for month in months:
-            t_test_area_main(
-                model, month, "aice", [-86.53, -63.73], [160, 230], "/home/ben/Documents/summer2019")
+            scatterplot_area_main(model,month,"aice",[-86.53,-63.73],[160,230],"/home/ben/Desktop/scatterplots")
+ 

@@ -238,8 +238,9 @@ def month_map_anom(path, modelname, monthnum, varname):
                 monthcount += 1  # we have added the data for one month.
     myvar_total_control /= monthcount
 
+    # convention is model - control
     # total myvar difference by gridpoint
-    myvar_diff = myvar_total_control - myvar_total
+    myvar_diff = myvar_total - myvar_total_control
     # now finding the total difference in m^2
     total_diff = np.ma.sum(myvar_diff*tarea)
 
