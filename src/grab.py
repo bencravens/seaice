@@ -42,7 +42,7 @@ def ice_area_seasonal(path, modelname):
             monthareas[monthnum, monthcount[monthnum]] = np.ma.sum(aice*tarea)
         except:
             print "Error:", sys.exc_info()[0]
-        monthcount[monthnum] = +1
+        monthcount[monthnum] += 1 
         testdata.close()
         # now converting to numpy array
 

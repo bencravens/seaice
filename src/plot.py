@@ -2,6 +2,7 @@
 
 # IMPORT LIBRARIES
 import grab
+import process
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
@@ -132,47 +133,29 @@ def t_test_main(modelname, monthnum, varname, pval_filter, t_or_p):
         "/media/windowsshare", modelname, monthnum, varname)
     lons, lats, controlvar = grab.month_map_data(
         "/media/windowsshare", "u-at053", monthnum, varname)
-
-    # now performing the t-test
-    # modelvar and controlvar should be the same shape
-    assert controlvar.shape == modelvar.shape
-    [z, x, y] = modelvar.shape
-
-    # now making an empty array to chuck results into
-    tstats = np.ma.zeros([x, y])
-    pvals = np.ma.zeros([x, y])
-    for i in xrange(x):
-        for j in xrange(y):
-            tstats[i, j], pvals[i, j] = scipy.stats.mstats.ttest_ind(
-                controlvar[:, i, j], modelvar[:, i, j])
-
-    tstats = np.ma.masked_where(pvals > pval_filter, tstats)
+    #formatting info for plot title based on whether we want to plot tstat or pvalue
+    if t_or_p:
+        varstring = "tstatistic"
+        plotinfo = "plotted where pval < {}".format(pval_filter)
+    else:
+        varstring = "pvalue"
+        plotinfo = ""
+    result = process.t_test_gridpoint(lons,lats,modelvar,controlvar,pval_filter,t_or_p)
     fig, ax = plt.subplots(figsize=(8, 8))
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawcoastlines(linewidth=1)
     m.drawlsmask(land_color='grey', ocean_color='aqua', lakes=True)
     m.drawmapboundary(linewidth=1)
-    if t_or_p:
-        cm = m.pcolormesh(lons, lats, tstats, latlon=True, cmap='seismic')
-        monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-                     7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-        plt.title("tstatistic of {} for model {} in the month of {}\n plotted where pval <{}".format(
-            varname, modelname, monthdict[monthnum], pval_filter))
-        cbar = m.colorbar(cm, location='bottom', pad="5%")
-        cbar.set_label('tstatistic of {}'.format(varname))
-        fig.savefig(
-            '/home/ben/Desktop/tstatplots/{}-{}-{}_tstat'.format(modelname, varname, monthnum))
-    else:
-        cm = m.pcolormesh(lons, lats, pvals, latlon=True, cmap='seismic')
-        monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-                     7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-        plt.title("pvalues of {} for model {} in the month of {}".format(
-            varname, modelname, monthdict[monthnum]))
-        cbar = m.colorbar(cm, location='bottom', pad="5%")
-        cbar.set_label('pvalues of {}'.format(varname))
-        fig.savefig(
-            '/home/ben/Desktop/tstatplots/{}-{}-{}_pval'.format(modelname, varname, monthnum))
+    cm = m.pcolormesh(lons, lats, result, latlon=True, cmap='seismic')
+    monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+                 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+    plt.title("{} of {} for model {} in the month of {}\n{}".format(
+        varstring,varname, modelname, monthdict[monthnum], plotinfo))
+    cbar = m.colorbar(cm, location='bottom', pad="5%")
+    cbar.set_label('tstatistic of {}'.format(varname))
+    fig.savefig(
+        '/home/ben/Desktop/tstatplots/{}-{}-{}_{}-TEST'.format(modelname, varname, monthnum,varstring))
 
 
 def t_test_area_main(modelname, monthnum, varname, latrange, lonrange, outputdir):
@@ -299,18 +282,6 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
                      facecolor='green', alpha=0.2, linestyle="--")
     plt.tight_layout()  # making sure the plots do not overlap...
 
-
-if __name__ == '__main__':
-    control = ["u-at053"]
-    models = ["u-au866", "u-au872", "u-au874", "u-av231"]
-    months = [2,9]
-    myvars = ["aice", "sithick", "ardg","fhocn_ai","fsurf_ai","siflcondbot","siflcondtop","siflsensupbot","siflswdbot","sihc","sispeed"]
-#    for month in months:
-#        for var in myvars:
-#            #first grabbing the mean plot for control
-#            month_map_mean_main(
-#                control[0], month,var)
-    for model in models:
-        for month in months:
-            scatterplot_area_main(model,month,"aice",[-86.53,-63.73],[160,230],"/home/ben/Desktop/scatterplots")
- 
+if __name__=="__main__":
+    t_test_main("u-av231",2,"aice",0.05,False)
+    t_test_main("u-av231",2,"aice",0.05,True)

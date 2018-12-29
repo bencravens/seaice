@@ -1,2 +1,2 @@
 # summer2019
-Code i write for my current internship @ physics otago
+Scripts I am writing to analyze climate data in the netCDF4 format. 
