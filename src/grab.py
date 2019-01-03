@@ -4,6 +4,7 @@ from netCDF4 import Dataset
 import numpy as np
 import sys
 
+######## SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
 def ice_area_seasonal(path, modelname):
     """imports variables from NetCDF files with specified path and variable name"""
@@ -119,6 +120,7 @@ def ice_area_month(path, modelname, monthnum):
             monthcount += 1  # we have added the data for one month
     return ice_area
 
+############### GENERAL FUNCTIONS FOR DATA GRABBING ##################################
 
 def month_map_mean(path, modelname, monthnum, varname):
     os.chdir("../../../../")
@@ -138,20 +140,24 @@ def month_map_mean(path, modelname, monthnum, varname):
                     testdata.variables['TLON'][:, :], dtype='float64')
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))
-                [x, y] = myvar.shape
-                myvar_total = np.ma.zeros([x, y])  # making total myvar
-                myvar_total += myvar
+                myvar_total = []  # making total myvar
+                myvar_total.append(myvar)
+                #we want to grab the units from the netCDF file so that we can add them to the plot...
+                units = testdata.variables[varname].units 
                 testdata.close()
                 monthcount += 1
             else:
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))
-                myvar_total += myvar
+                myvar_total.append(myvar)
                 # making sure we don't have too many files open at once...
                 testdata.close()
                 monthcount += 1  # we have added the data for one month.
-    myvar_total /= monthcount
-    return lons, lats, myvar_total
+    #now taking mean of all datapoints
+    #first convert to np.ma array
+    myvar_total = np.ma.asarray(myvar_total)
+    means = myvar_total.mean(axis=0)
+    return lons, lats, means, units
 
 
 def month_map_anom(path, modelname, monthnum, varname):
@@ -181,20 +187,21 @@ def month_map_anom(path, modelname, monthnum, varname):
                 lats = np.reshape(lats, [int(size/360.0), 360])
                 lons = np.reshape(lons, [int(size/360.0), 360])
                 myvar = np.reshape(myvar, [int(size/360.0), 360])
-                [x, y] = myvar.shape
-                myvar_total = np.ma.zeros([x, y])  # making total myvar
-                myvar_total += myvar
+                myvar_total = []
+                myvar_total.append(myvar)
+                units = testdata.variables[varname].units
                 testdata.close()
                 monthcount += 1
             else:
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
                 myvar = np.reshape(myvar, [int(size/360.0), 360])
-                myvar_total += myvar
+                myvar_total.append(myvar)
                 # making sure we don't have too many files open at once...
                 testdata.close()
                 monthcount += 1  # we have added the data for one month.
-    myvar_total /= monthcount
+    myvar_total = np.ma.asarray(myvar_total)
+    myvar_total_mean = myvar_total.mean(axis=0)
 
     # now grabbing control model total amount of variable... "gridsize * value at each grid"
     os.chdir("../../u-at053/ice/")
@@ -223,29 +230,29 @@ def month_map_anom(path, modelname, monthnum, varname):
                 lons = np.reshape(lons, [int(size/360.0), 360])
                 myvar = np.reshape(myvar, [int(size/360.0), 360])
                 tarea = np.reshape(tarea, [int(size/360.0), 360])
-                [x, y] = myvar.shape
-                myvar_total_control = np.ma.zeros([x, y])  # making total myvar
-                myvar_total_control += myvar
+                myvar_total_control = []  # making total myvar
+                myvar_total_control.append(myvar)
                 testdata.close()
                 monthcount += 1
             else:
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
                 myvar = np.reshape(myvar, [int(size/360.0), 360])
-                myvar_total_control += myvar
+                myvar_total_control.append(myvar)
                 # making sure we don't have too many files open at once...
                 testdata.close()
                 monthcount += 1  # we have added the data for one month.
-    myvar_total_control /= monthcount
+    myvar_total_control = np.ma.asarray(myvar_total_control)
+    myvar_total_control_mean = myvar_total_control.mean(axis=0)
 
     # convention is model - control
     # total myvar difference by gridpoint
-    myvar_diff = myvar_total - myvar_total_control
+    myvar_diff = myvar_total_mean - myvar_total_control_mean
     # now finding the total difference in m^2
     total_diff = np.ma.sum(myvar_diff*tarea)
 
     # now returning the lon,lat and anomaly of myvar
-    return lons, lats, myvar_diff, total_diff
+    return lons, lats, myvar_diff, total_diff, units
 
 
 def month_map_stddev(path, modelname, monthnum, varname):

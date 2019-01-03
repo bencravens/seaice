@@ -11,27 +11,24 @@ from scipy import stats
 import os
 import sys
 
-######## ICE AREA SPECIFIC DATA GRABBING FUNCTIONS ###############################
+######## SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
 
 def ice_area_seasonal_main():
     """grabbing dataset for all models, calculating seasonal ice area, plotting."""
-    # vectorizing plotting routine
     models = ["at053", "au866", "av231", "au872", "au874"]
+    fig, ax = plt.subplots(figsize=(8, 8))
     for i, model in enumerate(models):
         tempstd, tempmean, tempmax, tempmin = grab.ice_area_seasonal(
             "/media/windowsshare", "u-{}".format(model))
         print "the minimum areas are {}".format(tempmin)
-        fig, ax = plt.subplots(figsize=(8, 8))
-        plt.plot(range(1, 13), tempmean)
         plt.xlabel('Months of the year')
         plt.ylabel('Sea ice area (m^2)')
-        plt.title('{} - Seasonal'.format(model))
-        plt.fill_between(range(1, 13), tempmean-tempstd, tempmean +
-                         tempstd, facecolor='green', alpha=0.2, linestyle="--")
-        plt.tight_layout()  # making sure the plots do not overlap...
-        plt.show()
-        fig.savefig('/home/ben/Desktop/seasonal/{}-seasonal'.format(model))
+        #plt.fill_between(range(1, 13), tempmean-tempstd, tempmean +
+        #                 tempstd, facecolor='green', alpha=0.2, linestyle="--")
+        plt.plot(range(1, 13), tempmean)
+    plt.show()    
+    fig.savefig('/home/ben/Desktop/seasonal/allmodel-seasonal-nostd')
 
 
 def ice_area_tseries_main():
@@ -63,19 +60,23 @@ def ice_area_month_main():
 
 def month_map_mean_main(modelname, monthnum, varname):
     """function called when map plots of mean of variable varname are wanted..."""
-    lons, lats, myvar = grab.month_map_mean(
+    lons, lats, myvar,units = grab.month_map_mean(
         "/media/windowsshare", modelname, monthnum, varname)  # grabbing data
     fig, ax = plt.subplots(figsize=(8, 8))
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawcoastlines(linewidth=1)
-    m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
+    #m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
     m.drawmapboundary(linewidth=1)
     cm = m.pcolormesh(lons, lats, myvar, latlon=True)
     monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
                  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-    plt.title("map plot for {} mean {} in the month of {}".format(
-        modelname, varname, monthdict[monthnum]))
+    if units=="1":
+        plt.title("map plot for {} mean {} in the month of {}.\n With units of fractional area (0.0-1.0)".format(
+            modelname, varname, monthdict[monthnum]))
+    else:
+        plt.title("map plot for {} mean {} in the month of {}.\n With units {}".format(
+        modelname, varname, monthdict[monthnum],units))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
     cbar.set_label('{} in grid cell'.format(varname))
     fig.savefig(
@@ -84,22 +85,26 @@ def month_map_mean_main(modelname, monthnum, varname):
 
 def month_map_anom_main(modelname, monthnum, varname):
     """function called when anomaly map plots of variable varname are wanted..."""
-    lons, lats, myvar, total_diff = grab.month_map_anom(
+    lons, lats, myvar, total_diff, units = grab.month_map_anom(
         "/media/windowsshare", modelname, monthnum, varname)  # grabbing data
     fig, ax = plt.subplots(figsize=(8, 8))
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawcoastlines(linewidth=1)
     m.drawmapboundary(linewidth=1)
-    m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
+    #m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
     cm = m.pcolormesh(lons, lats, myvar, latlon=True, cmap='seismic')
     monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
                  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-    plt.title("{} - Control in the month of {} \n variable plotted is {} \n total difference is {}".format(
-        modelname, monthdict[monthnum], varname, total_diff))
+    if units=="1":
+        plt.title("{} - Control in the month of {} \n variable plotted is {} \n total difference is {}, units are fractional area (0.0-1.0)".format(
+            modelname, monthdict[monthnum], varname, total_diff))
+    else:
+        plt.title("{} - Control in the month of {} \n variable plotted is {} \n total difference is {}, units are {}".format(
+            modelname, monthdict[monthnum], varname, total_diff,units))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
     cbar.set_label('change in variable {}'.format(varname))
-    plt.clim(-1.0, 1.0)  # one may have to adjust clim depending on variable...
+    plt.clim(-1.0,1.0)
     fig.savefig(
         '/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
@@ -283,5 +288,4 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    t_test_main("u-av231",2,"aice",0.05,False)
-    t_test_main("u-av231",2,"aice",0.05,True)
+    month_map_anom_main("u-au866",2,"aice")
