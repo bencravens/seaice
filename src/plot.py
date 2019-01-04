@@ -26,10 +26,28 @@ def ice_area_seasonal_main():
         plt.ylabel('Sea ice area (m^2)')
         #plt.fill_between(range(1, 13), tempmean-tempstd, tempmean +
         #                 tempstd, facecolor='green', alpha=0.2, linestyle="--")
-        plt.plot(range(1, 13), tempmean)
+        plt.plot(range(1, 13), tempmean,label=model)
+    plt.legend()
+    plt.title('Seasonal map plot of mean total ice area at each month')
     plt.show()    
     fig.savefig('/home/ben/Desktop/seasonal/allmodel-seasonal-nostd')
 
+def ice_volume_seasonal_main():
+    """grabbing dataset for all models, calculating seasonal ice volume, plotting."""
+    models = ["at053", "au866", "av231", "au872", "au874"]
+    fig, ax = plt.subplots(figsize=(8, 8))
+    for i, model in enumerate(models):
+        tempstd, tempmean, tempmax, tempmin = grab.ice_volume_seasonal(
+            "/media/windowsshare", "u-{}".format(model))
+        print "the minimum volumes  are {}".format(tempmin)
+        plt.xlabel('Months of the year')
+        plt.ylabel('Sea ice volume (m^2)')
+        plt.plot(range(1, 13), tempmean,label=model)
+        plt.fill_between(range(1, 13), tempmean-tempstd, tempmean +
+                         tempstd, facecolor='green', alpha=0.2, linestyle="--")
+        plt.title('Seasonal map plot of mean total ice volume for model {}'.format(model))
+        plt.show()    
+        fig.savefig('/home/ben/Desktop/seasonal/seasonal-volume-{}'.format(model))
 
 def ice_area_tseries_main():
     """makes a nice time series plot for ice area of a given model..."""
@@ -41,19 +59,36 @@ def ice_area_tseries_main():
     plt.show()
 
 
-def ice_area_month_main():
+def ice_area_month_main(modelname,monthnum):
     """makes a time series plot of ice area for a given month"""
+    monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+             7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
     ice_area = grab.ice_area_month(
-        "/media/windowsshare", "u-at053", 2)  # grabbing data for feb, (i.e) month=2
-    plt.plot(ice_area)
-    plt.title("Sea ice area from 1990-2009 for the month of February")
-    plt.xlabel("Years since 1990")
+        "/media/windowsshare",modelname,monthnum)
+    print ice_area
+    plt.title("Sea ice area runs of control model {}\nIn the month of {}, year 2000 forcing".format(
+        modelname,monthdict[monthnum]))
+    plt.xlabel("Run number")
     plt.ylabel("Total antarctic sea ice area (m^2)")
-    std_dev = stats.stdev(ice_area)*np.ones(len(ice_area))
-    xvals = np.linspace(0, 19, 20, dtype='int')
-    plt.fill_between(xvals, ice_area+std_dev, ice_area-std_dev,
-                     facecolor='green', alpha=0.2, linestyle="--")
+    stddev = np.std(ice_area)
+    plt.errorbar(range(1,21),ice_area,yerr=stddev,linestyle="None", marker="o",color='b')
     plt.show()
+
+def ice_volume_month_main(modelname,monthnum):
+    """makes a time series plot of ice volume for a given month"""
+    monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+             7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+    ice_volume = grab.ice_volume_month(
+        "/media/windowsshare",modelname,monthnum)
+    print ice_volume
+    plt.title("Sea ice volume runs of control model {}\nIn the month of {}, year 2000 forcing".format(
+        modelname,monthdict[monthnum]))
+    plt.xlabel("Run number")
+    plt.ylabel("Total antarctic sea ice volume (m^2)")
+    stddev = np.std(ice_volume)
+    plt.errorbar(range(1,21),ice_volume,yerr=stddev,linestyle="None", marker="o",color='b')
+    plt.show()
+
 
 ############### GENERAL FUNCTIONS FOR MAP PLOTTING ##################################
 
@@ -288,4 +323,5 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    month_map_anom_main("u-au866",2,"aice")
+    ice_volume_month_main("u-at053",2)
+    ice_volume_month_main("u-at053",9)

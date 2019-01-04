@@ -7,7 +7,7 @@ import sys
 ######## SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
 def ice_area_seasonal(path, modelname):
-    """imports variables from NetCDF files with specified path and variable name"""
+    """grabs mean total sea ice area for each month given the name of model one wants and the path to the model files"""
     os.chdir("../../../../")
     os.chdir("{}/{}/{}".format(path, modelname, "ice"))
     filecount = len(os.listdir('./'))
@@ -63,6 +63,63 @@ def ice_area_seasonal(path, modelname):
 
     return stdevs, means, maxes, mins
 
+def ice_volume_seasonal(path, modelname):
+    """grabs mean total sea ice volume for each month given the name of model one wants and the path to the model files"""
+    os.chdir("../../../../")
+    os.chdir("{}/{}/{}".format(path, modelname, "ice"))
+    filecount = len(os.listdir('./'))
+
+    # now we will sort the files based on month.
+    # assumes same number of files for each month
+    monthvolumes = np.ma.zeros([12, filecount/12], dtype='float64')
+    monthcount = np.zeros(12)
+    stdevs = np.ma.zeros(12, dtype='float64')
+    means = np.ma.zeros(12, dtype='float64')
+    maxes = np.ma.zeros(12, dtype='float64')
+    mins = np.ma.zeros(12, dtype='float64')
+    for filenum, filename in enumerate(os.listdir('./')):
+        print filename
+        testdata = Dataset(filename)
+        # now grabbing latitude just to check if we are in the southern hemisphere (some data is full world)
+        lats = np.ma.array(testdata.variables['TLAT'][:, :], dtype='float64')
+        cond = lats <= 0  # if we are below the equator, grab
+        if filenum == 0:
+            tarea = np.ma.array(
+                testdata.variables['tarea'][:, :], dtype='float64')[cond]
+        # grabbing month value from filename... format does not vary
+        monthstr = filename[19:21]
+        monthnum = int(monthstr)-1
+
+        print "the month we are grabbing is {}".format(monthstr)
+        print "Grabbing {}, file {} of {}".format(filename, filenum, filecount)
+        aice = np.ma.squeeze(np.ma.array(
+            testdata.variables['aice'][:, :], dtype='float64'))[cond]
+        sithick = np.ma.squeeze(np.ma.array(
+            testdata.variables['sithick'][:,:],dtype='float64'))[cond]
+        # catching weird error as one or two files are invalid
+        try:
+            monthvolumes[monthnum, monthcount[monthnum]] = np.ma.sum(aice*tarea*sithick)
+        except:
+            print "Error:", sys.exc_info()[0]
+        monthcount[monthnum] += 1 
+        testdata.close()
+        # now converting to numpy array
+
+    # now calculating the mean for each month and returning that value, as well as the standard deviation for each month.
+    # first masking the mins value correctly so that it does not count "0" entries
+    [x, y] = monthvolumes.shape
+    for i in xrange(x):
+        for j in xrange(y):
+            if monthvolumes[i, j] == 0:
+                monthvolumes[i, j] = np.ma.masked
+
+    for i in xrange(12):
+        stdevs[i] = np.ma.std(monthvolumes[i, :])
+        means[i] = np.ma.mean(monthvolumes[i, :])
+        maxes[i] = np.ma.max(monthvolumes[i, :])
+        mins[i] = np.ma.min(monthvolumes[i, :])
+
+    return stdevs, means, maxes, mins
 
 def ice_area_tseries(path, modelname):
     """makes a time series plot of a certain model """
@@ -120,6 +177,38 @@ def ice_area_month(path, modelname, monthnum):
             monthcount += 1  # we have added the data for one month
     return ice_area
 
+def ice_volume_month(path, modelname, monthnum):
+    os.chdir("../../../../")
+    os.chdir("{}/{}/{}".format(path, modelname, "ice"))
+    ice_volume = []
+    monthcount = 0
+
+    for filename in (sorted(os.listdir('./'))):
+        # grabbing month from filename
+        monthstr = filename[19:21]
+        # we only want the files of a certain month given by monthnum
+        if int(monthstr) == monthnum:
+            testdata = Dataset(filename)
+            # want to make sure we are in the southern hemisphere
+            lats = np.ma.array(
+                testdata.variables['TLAT'][:, :], dtype='float64')
+            cond = lats <= 0  # if out latitude is below the equator...
+            if monthcount == 0:
+                tarea = np.ma.array(
+                    testdata.variables['tarea'][:, :], dtype='float64')[cond]
+            aice = np.ma.squeeze(np.ma.array(
+                testdata.variables['aice'][:, :], dtype='float64'))[cond]
+            sithick = np.ma.squeeze(np.ma.array(
+                testdata.variables['sithick'][:,:],dtype='float64'))[cond]
+            try:
+                ice_volume.append(np.ma.sum(aice*tarea))
+                print "volume added is {}".format(np.ma.sum(aice*tarea*sithick))
+            except:
+                print "Error:", sys.exc_info()[0]
+            monthcount += 1  # we have added the data for one month
+    return ice_volume
+
+#
 ############### GENERAL FUNCTIONS FOR DATA GRABBING ##################################
 
 def month_map_mean(path, modelname, monthnum, varname):
