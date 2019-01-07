@@ -116,12 +116,14 @@ def month_map_mean_main(modelname,monthnum,varname,csvdir):
         modelname, varname, monthdict[monthnum],units))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
     cbar.set_label('{} in grid cell'.format(varname))
+    lims = process.read_lims(modelname,monthnum,varname,csvdir)
+    plt.clim(float(lims["Min"]),float(lims["Max"]))
     plt.show()
     fig.savefig(
         '/home/ben/Desktop/mapplots/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
 
-def month_map_anom_main(modelname, monthnum, varname):
+def month_map_anom_main(modelname, monthnum, varname,csvdir):
     """function called when anomaly map plots of variable varname are wanted..."""
     lons, lats, myvar, total_diff, units = grab.month_map_anom(
         "/media/windowsshare", modelname, monthnum, varname)  # grabbing data
@@ -142,7 +144,12 @@ def month_map_anom_main(modelname, monthnum, varname):
             modelname, monthdict[monthnum], varname, total_diff,units))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
     cbar.set_label('change in variable {}'.format(varname))
-    plt.clim(-1.0,1.0)
+    #reading in plot limit dictionary from csv file to be consistent with month_map_mean (assumes month_map_mean has been run...)
+    lims = process.read_lims(modelname,monthnum,varname,csvdir)
+    print "LIMS INCOMING"
+    print lims
+    plt.clim(float(lims["Min"]),float(lims["Max"]))
+    plt.show()
     fig.savefig(
         '/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
@@ -326,4 +333,5 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    month_map_mean_main("u-at053",2,"aice","/home/ben/Documents/summer2019/plotlims")
+    month_map_mean_main("u-au866",2,"aice","/home/ben/Documents/summer2019/plotlims")
+    month_map_anom_main("u-au866",2,"aice","/home/ben/Documents/summer2019/plotlims")

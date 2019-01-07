@@ -32,7 +32,7 @@ def t_test_gridpoint(lons,lats,modelvar,controlvar,pval_filter, t_or_p):
         return pvals
 
 def save_lims(modelname,monthnum,varname,csvdir,myvar):
-    """with a given variable myvar and modelname, saves the upper and lower limits for the plots corresponding to the given model and variable into a csv file modelname.csv in the given directory csvdir. This is so that later on month_map_anom can make plots with consistent scaling."""
+    """with a given variable myvar and modelname, saves the upper and lower limits for the plots corresponding to the given model and variable into a csv file modelname_monthnum_varname.csv in the given directory csvdir. This is so that later on month_map_anom can make plots with consistent scaling."""
     #first changing into correct directory
     os.chdir(csvdir)
     print os.listdir("./")
@@ -46,7 +46,7 @@ def save_lims(modelname,monthnum,varname,csvdir,myvar):
     f.close()
     
     #now making data dictionary to write to csv file
-    data = {'Model': modelname, 'Month': monthnum, 'Variable': varname, 'Max': np.ma.max(myvar)*1.1, 'Min': 0.9*np.ma.min(myvar)}
+    data = {'Model': modelname, 'Month': monthnum, 'Variable': varname, 'Max': np.ma.max(myvar)*1.1, 'Min': -1.1*np.ma.max(myvar)}
 
     #now opening the made file with csv
     with open("{}_{}_{}.txt".format(modelname,monthnum,varname),"w") as csv_file:
@@ -56,3 +56,16 @@ def save_lims(modelname,monthnum,varname,csvdir,myvar):
         writer.writerow(data)
 
     print "lims written to csv file"
+
+def read_lims(modelname,monthnum,varname,csvdir):
+    """with a given variable myvar and modelname, reads the upper and lower limits for the plots corresponding to the given model and variable from a csv file modelname_monthnum_varname.csv in the given directory csvdir and returns them."""
+    #first changing into correct directory
+    os.chdir(csvdir)
+    print os.listdir("./")    
+    
+    with open("{}_{}_{}.txt".format(modelname,monthnum,varname)) as File:
+        reader = csv.DictReader(File)
+        for row in reader:
+            return row #there should only be one row
+
+
