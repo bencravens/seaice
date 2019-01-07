@@ -93,10 +93,12 @@ def ice_volume_month_main(modelname,monthnum):
 ############### GENERAL FUNCTIONS FOR MAP PLOTTING ##################################
 
 
-def month_map_mean_main(modelname, monthnum, varname):
+def month_map_mean_main(modelname,monthnum,varname,csvdir):
     """function called when map plots of mean of variable varname are wanted..."""
     lons, lats, myvar,units = grab.month_map_mean(
-        "/media/windowsshare", modelname, monthnum, varname)  # grabbing data
+        "/media/windowsshare",modelname,monthnum,varname)  # grabbing data
+    #now saving limits of plot to csv file so that month_map_anom_main can use them
+    process.save_lims(modelname,monthnum,varname,csvdir,myvar)
     fig, ax = plt.subplots(figsize=(8, 8))
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
@@ -114,6 +116,7 @@ def month_map_mean_main(modelname, monthnum, varname):
         modelname, varname, monthdict[monthnum],units))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
     cbar.set_label('{} in grid cell'.format(varname))
+    plt.show()
     fig.savefig(
         '/home/ben/Desktop/mapplots/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
@@ -323,5 +326,4 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    ice_volume_month_main("u-at053",2)
-    ice_volume_month_main("u-at053",9)
+    month_map_mean_main("u-at053",2,"aice","/home/ben/Documents/summer2019/plotlims")

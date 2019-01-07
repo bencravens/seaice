@@ -1,0 +1,2 @@
+Model,Month,Variable,Max,Min
+u-at053,2,aice,1.0999927550554276,0.0
