@@ -263,7 +263,7 @@ def month_map_mean(path, modelname, monthnum, varname,isice):
     return lons, lats, means, units
 
 
-def month_map_anom(path, modelname, monthnum, varname):
+def month_map_anom(path, modelname, monthnum, varname,isice):
     """this function loads in the control model (u-at053), and makes map plots of average monthly difference between it and a given model for a parameter."""
     os.chdir("../../../../")
     os.chdir("{}/{}/{}".format(path, modelname, "ice"))
@@ -283,6 +283,13 @@ def month_map_anom(path, modelname, monthnum, varname):
                     testdata.variables['TLON'][:, :], dtype='float64')[cond]
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                aice = np.ma.squeeze(np.ma.array(
+                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                if isice==False:
+                    #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                    icecond = aice == 0
+                    print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
+                    myvar = np.ma.masked_where(icecond,myvar)
                 lats = lats[cond]
                 # size should be the same for all of them...
                 size = lons.shape[0]
@@ -298,6 +305,13 @@ def month_map_anom(path, modelname, monthnum, varname):
             else:
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                aice = np.ma.squeeze(np.ma.array(
+                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                if isice==False:
+                    #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                    icecond = aice == 0
+                    print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
+                    myvar = np.ma.masked_where(icecond,myvar)
                 myvar = np.reshape(myvar, [int(size/360.0), 360])
                 myvar_total.append(myvar)
                 # making sure we don't have too many files open at once...
@@ -325,6 +339,13 @@ def month_map_anom(path, modelname, monthnum, varname):
                     testdata.variables['TLON'][:, :], dtype='float64')[cond]
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                aice = np.ma.squeeze(np.ma.array(
+                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                if isice==False:
+                    #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                    icecond = aice == 0
+                    print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
+                    myvar = np.ma.masked_where(icecond,myvar)
                 lats = lats[cond]
                 # size should be the same for all of them...
                 size = lons.shape[0]
@@ -340,6 +361,13 @@ def month_map_anom(path, modelname, monthnum, varname):
             else:
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                aice = np.ma.squeeze(np.ma.array(
+                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                if isice==False:
+                    #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                    icecond = aice == 0
+                    print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
+                    myvar = np.ma.masked_where(icecond,myvar)
                 myvar = np.reshape(myvar, [int(size/360.0), 360])
                 myvar_total_control.append(myvar)
                 # making sure we don't have too many files open at once...

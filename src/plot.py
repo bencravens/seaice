@@ -123,10 +123,10 @@ def month_map_mean_main(modelname,monthnum,varname,csvdir,isice):
         '/home/ben/Desktop/mapplots/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
 
-def month_map_anom_main(modelname, monthnum, varname,csvdir):
+def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
     """function called when anomaly map plots of variable varname are wanted..."""
     lons, lats, myvar, total_diff, units = grab.month_map_anom(
-        "/media/windowsshare", modelname, monthnum, varname)  # grabbing data
+        "/media/windowsshare", modelname, monthnum, varname,isice)  # grabbing data
     fig, ax = plt.subplots(figsize=(8, 8))
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
@@ -151,7 +151,7 @@ def month_map_anom_main(modelname, monthnum, varname,csvdir):
     plt.clim(float(lims["Min"]),float(lims["Max"]))
     plt.show()
     fig.savefig(
-        '/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname, varname, monthnum))
+        '/home/ben/Desktop/anomplots/{}-{}-{}-anom'.format(modelname, varname, monthnum))
     plt.close()
 
 def month_map_variance_main(modelname, monthnum, varname):
@@ -333,4 +333,5 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    month_map_mean_main("u-au866",2,"sithick","/home/ben/Documents/summer2019/plotlims",False)
+    month_map_mean_main("u-au866",2,"fhocn_ai","/home/ben/Documents/summer2019/plotlims",False)
+    month_map_anom_main("u-au866",2,"fhocn_ai","/home/ben/Documents/summer2019/plotlims",False)
