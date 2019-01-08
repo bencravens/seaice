@@ -211,7 +211,7 @@ def ice_volume_month(path, modelname, monthnum):
 #
 ############### GENERAL FUNCTIONS FOR DATA GRABBING ##################################
 
-def month_map_mean(path, modelname, monthnum, varname):
+def month_map_mean(path, modelname, monthnum, varname,isice):
     os.chdir("../../../../")
     os.chdir("{}/{}/{}".format(path, modelname, "ice"))
     monthcount = 0
@@ -229,6 +229,13 @@ def month_map_mean(path, modelname, monthnum, varname):
                     testdata.variables['TLON'][:, :], dtype='float64')
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))
+                aice = np.ma.squeeze(np.ma.array(
+                    testdata.variables['aice'][:,:], dtype='float64'))
+                if isice==False:
+                    #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                    cond = aice == 0
+                    print cond
+                    myvar = np.ma.masked_where(cond,myvar)
                 myvar_total = []  # making total myvar
                 myvar_total.append(myvar)
                 #we want to grab the units from the netCDF file so that we can add them to the plot...
@@ -238,6 +245,13 @@ def month_map_mean(path, modelname, monthnum, varname):
             else:
                 myvar = np.ma.squeeze(np.ma.array(
                     testdata.variables[str(varname)][:, :], dtype='float64'))
+                if isice==False:
+                    #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                    aice = np.ma.squeeze(np.ma.array(
+                        testdata.variables['aice'][:,:], dtype='float64'))
+                    cond = aice == 0
+                    print cond
+                    myvar = np.ma.masked_where(cond,myvar)
                 myvar_total.append(myvar)
                 # making sure we don't have too many files open at once...
                 testdata.close()
