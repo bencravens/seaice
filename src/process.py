@@ -31,41 +31,47 @@ def t_test_gridpoint(lons,lats,modelvar,controlvar,pval_filter, t_or_p):
     else:
         return pvals
 
-def save_lims(modelname,monthnum,varname,csvdir,myvar):
-    """with a given variable myvar and modelname, saves the upper and lower limits for the plots corresponding to the given model and variable into a csv file modelname_monthnum_varname.csv in the given directory csvdir. This is so that later on month_map_anom can make plots with consistent scaling."""
-    #first changing into correct directory
-    os.chdir(csvdir)
-    print os.listdir("./")
-    
-    #deleting old file if it exists
-    if os.path.exists("{}_{}_{}.txt".format(modelname,monthnum,varname)):
-        os.remove("{}_{}_{}.txt".format(modelname,monthnum,varname))
-    
-    #now making a blank file
-    f  = open("{}_{}_{}.txt".format(modelname,monthnum,varname),"w+")
-    f.close()
-    
-    #now making data dictionary to write to csv file
-    data = {'Model': modelname, 'Month': monthnum, 'Variable': varname, 'Max': np.ma.max(myvar)*1.1, 'Min': -1.1*np.ma.max(myvar)}
-
-    #now opening the made file with csv
-    with open("{}_{}_{}.txt".format(modelname,monthnum,varname),"w") as csv_file:
-        fieldnames = ['Model', 'Month', 'Variable', 'Max', 'Min']
-        writer = csv.DictWriter(csv_file,fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerow(data)
-
-    print "lims written to csv file"
-
-def read_lims(modelname,monthnum,varname,csvdir):
-    """with a given variable myvar and modelname, reads the upper and lower limits for the plots corresponding to the given model and variable from a csv file modelname_monthnum_varname.csv in the given directory csvdir and returns them."""
+def read_lims(varname,month,csvdir):
+    """reads upper and lower limits for plot from the dir csvdir in the file varname.txt and returns them"""
     #first changing into correct directory
     os.chdir(csvdir)
     print os.listdir("./")    
     
-    with open("{}_{}_{}.txt".format(modelname,monthnum,varname)) as File:
+    with open("{}_{}.txt".format(varname,month)) as File:
         reader = csv.DictReader(File)
         for row in reader:
             return row #there should only be one row
+
+def anom_limit_setup(varname,month,models,csvdir):
+    """sets upper and lower bound for a variable for anomaly plots based on the max/min value TOTAL across all anomalies"""
+    for model in models:
+        lons,lats,myvar,totaldiff,units = grab.month_map_anom("/media/windowsshare",model,month,varname,False)
+        maxes = []
+        mins = []
+        maxes.append(np.ma.max(myvar))
+        mins.append(np.ma.min(myvar))
+    os.chdir(csvdir)
+    with open("{}_{}.txt".format(varname,month),"w+") as csv_file:
+        fieldnames=['Max','Min']
+        writer = csv.DictWriter(csv_file,fieldnames=fieldnames) 
+        writer.writeheader()
+        absmax = abs(max(maxes))
+        absmin = abs(min(mins))
+        if absmax > absmin:
+            data = {'Max':absmax, 'Min':-1.0*absmax}
+        elif absmin > absmax:
+            data = {'Max':absmin, 'Min':-1.0*absmin}
+        else:
+            data = {'Max':absmin, 'Min':-1.0*absmin}
+        writer.writerow(data)
+    print "finished writing limits. They are {} and {}".format(max(maxes),min(mins))
+
+
+
+
+
+
+
+
 
 

@@ -234,7 +234,6 @@ def month_map_mean(path, modelname, monthnum, varname,isice):
                 if isice==False:
                     #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
                     cond = aice == 0
-                    print cond
                     myvar = np.ma.masked_where(cond,myvar)
                 myvar_total = []  # making total myvar
                 myvar_total.append(myvar)
@@ -250,7 +249,6 @@ def month_map_mean(path, modelname, monthnum, varname,isice):
                     aice = np.ma.squeeze(np.ma.array(
                         testdata.variables['aice'][:,:], dtype='float64'))
                     cond = aice == 0
-                    print cond
                     myvar = np.ma.masked_where(cond,myvar)
                 myvar_total.append(myvar)
                 # making sure we don't have too many files open at once...

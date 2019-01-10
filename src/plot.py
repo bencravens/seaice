@@ -98,27 +98,26 @@ def month_map_mean_main(modelname,monthnum,varname,csvdir,isice):
     lons, lats, myvar,units = grab.month_map_mean(
         "/media/windowsshare",modelname,monthnum,varname,isice)  # grabbing data
     #now saving limits of plot to csv file so that month_map_anom_main can use them
-    process.save_lims(modelname,monthnum,varname,csvdir,myvar)
     fig, ax = plt.subplots(figsize=(8, 8))
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawcoastlines(linewidth=1)
-    #m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
+    m.drawlsmask(land_color='grey',ocean_color='grey',lakes=True)
     m.drawmapboundary(linewidth=1)
     cm = m.pcolormesh(lons, lats, myvar, latlon=True)
     monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
                  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-    if units=="1":
-        plt.title("map plot for {} mean {} in the month of {}.\n With units of fractional area (0.0-1.0)".format(
-            modelname, varname, monthdict[monthnum]))
-    else:
-        plt.title("map plot for {} mean {} in the month of {}.\n With units {}".format(
-        modelname, varname, monthdict[monthnum],units))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
-    cbar.set_label('{} in grid cell'.format(varname))
-    lims = process.read_lims(modelname,monthnum,varname,csvdir)
+    if units=="1":
+        plt.title("{} mean {} in the month of {}".format(
+            modelname, varname, monthdict[monthnum])) 
+        cbar.set_label('{}[fractional area]'.format(varname))
+    else:
+        plt.title("{} mean {} in the month of {}".format(
+        modelname, varname, monthdict[monthnum]))
+        cbar.set_label('{}[{}]'.format(varname,units))
     #plt.clim(float(lims["Min"]),float(lims["Max"]))
-    plt.show()
+    #plt.show()
     fig.savefig(
         '/home/ben/Desktop/mapplots/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
@@ -132,24 +131,28 @@ def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawcoastlines(linewidth=1)
     m.drawmapboundary(linewidth=1)
-    #m.drawlsmask(land_color='grey', ocean_color='black', lakes=True)
+    m.drawlsmask(land_color='grey', ocean_color='grey', lakes=True)
     cm = m.pcolormesh(lons, lats, myvar, latlon=True, cmap='seismic')
     monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
                  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
-    if units=="1":
-        plt.title("{} - Control in the month of {} \n variable plotted is {} \n total difference is {}, units are fractional area (0.0-1.0)".format(
-            modelname, monthdict[monthnum], varname, total_diff))
-    else:
-        plt.title("{} - Control in the month of {} \n variable plotted is {} \n total difference is {}, units are {}".format(
-            modelname, monthdict[monthnum], varname, total_diff,units))
     cbar = m.colorbar(cm, location='bottom', pad="5%")
-    cbar.set_label('change in variable {}'.format(varname))
-    #reading in plot limit dictionary from csv file to be consistent with month_map_mean (assumes month_map_mean has been run...)
-    lims = process.read_lims(modelname,monthnum,varname,csvdir)
-    print "LIMS INCOMING"
+    plt.title("{} {} anomaly in the month of {}".format(modelname,varname,monthdict[monthnum]))
+    if units=="1":
+        cbar.set_label('$\Delta$ {}[fractional area]'.format(varname))
+    else:
+        cbar.set_label('$\Delta$ {}[{}]'.format(varname,units))
+    #generating limits for plots
+    try:
+        #try to read them. May have already been generated
+        lims = process.read_lims(varname,monthnum,csvdir)
+    except:
+        #If they haven't been generated, generate then read them
+        print "error with reading limits.. attemping to create limits"
+        process.anom_limit_setup(varname,monthnum,["u-au866","u-au872","u-au874","u-av231"],csvdir)
+        lims = process.read_lims(varname,month,csvdir)
     print lims
     plt.clim(float(lims["Min"]),float(lims["Max"]))
-    plt.show()
+    #plt.show()
     fig.savefig(
         '/home/ben/Desktop/anomplots/{}-{}-{}-anom'.format(modelname, varname, monthnum))
     plt.close()
@@ -333,5 +336,13 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    month_map_mean_main("u-au866",2,"fhocn_ai","/home/ben/Documents/summer2019/plotlims",False)
-    month_map_anom_main("u-au866",2,"fhocn_ai","/home/ben/Documents/summer2019/plotlims",False)
+    #['sithick','sispeed','sihc','siflswdbot'
+    myvars = ['siflsensupbot','siflcondtop','siflcondbot','fsurf_ai','fhocn_ai','ardg','dardg1dt','opening','snoice']
+    control = 'u-at053'
+    models = ['u-au866','u-au872','u-au874','u-av231']
+    months=[2,9]
+    for var in myvars:
+        for month in months:
+            month_map_mean_main(control,month,var,"/home/ben/Documents/summer2019/plotlims",False)
+            for model in models:
+                month_map_anom_main(model,month,var,"/home/ben/Documents/summer2019/plotlims",False)
