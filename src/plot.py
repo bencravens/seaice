@@ -13,41 +13,83 @@ import sys
 
 ######## SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
-
-def ice_area_seasonal_main():
-    """grabbing dataset for all models, calculating seasonal ice area, plotting."""
+def ice_area_seasonal_main_all():
+    """grabbing dataset for all models, calculating seasonal ice area, plots all on same graph."""
+    # vectorizing plotting routine
     models = ["at053", "au866", "av231", "au872", "au874"]
+    testmodels = ["au866"]
     fig, ax = plt.subplots(figsize=(8, 8))
     for i, model in enumerate(models):
         tempstd, tempmean, tempmax, tempmin = grab.ice_area_seasonal(
             "/media/windowsshare", "u-{}".format(model))
         print "the minimum areas are {}".format(tempmin)
+        plt.plot(range(1, 13), tempmean,label=model)
         plt.xlabel('Months of the year')
         plt.ylabel('Sea ice area (m^2)')
-        #plt.fill_between(range(1, 13), tempmean-tempstd, tempmean +
-        #                 tempstd, facecolor='green', alpha=0.2, linestyle="--")
-        plt.plot(range(1, 13), tempmean,label=model)
-    plt.legend()
-    plt.title('Seasonal map plot of mean total ice area at each month')
-    plt.show()    
-    fig.savefig('/home/ben/Desktop/seasonal/allmodel-seasonal-nostd')
-
-def ice_volume_seasonal_main():
-    """grabbing dataset for all models, calculating seasonal ice volume, plotting."""
+        plt.title('Seasonal mean total sea ice area'.format(model))
+        plt.tight_layout()  # making sure the plots do not overlap...
+        plt.ylim(0,1.8e13)
+    plt.legend(bbox_to_anchor=(0.9, 0.3),bbox_transform=plt.gcf().transFigure)
+    plt.show()
+ 
+def ice_volume_seasonal_main_all():
+    """grabbing dataset for all models, calculating seasonal ice volume, plots all on same graph."""
+    # vectorizing plotting routine
     models = ["at053", "au866", "av231", "au872", "au874"]
+    testmodels = ["au866"]
     fig, ax = plt.subplots(figsize=(8, 8))
     for i, model in enumerate(models):
         tempstd, tempmean, tempmax, tempmin = grab.ice_volume_seasonal(
             "/media/windowsshare", "u-{}".format(model))
-        print "the minimum volumes  are {}".format(tempmin)
-        plt.xlabel('Months of the year')
-        plt.ylabel('Sea ice volume (m^2)')
+        print "the minimum volumes are {}".format(tempmin)
         plt.plot(range(1, 13), tempmean,label=model)
+        plt.xlabel('Months of the year')
+        plt.ylabel('Sea ice volume (m^3)')
+        plt.title('Seasonal mean total sea ice volume'.format(model))
+        plt.tight_layout()  # making sure the plots do not overlap...
+        plt.ylim(0,2.5e13)
+    plt.legend(bbox_to_anchor=(0.9, 0.3),bbox_transform=plt.gcf().transFigure)
+    plt.show()
+    
+def ice_volume_seasonal_main():
+    """grabbing dataset for all models, calculating seasonal ice volume, plotting."""
+    # vectorizing plotting routine
+    models = ["at053", "au866", "av231", "au872", "au874"]
+    testmodels = ["au866"]
+    fig, ax = plt.subplots(figsize=(8, 8))
+    for i, model in enumerate(models):
+        tempstd, tempmean, tempmax, tempmin = grab.ice_volume_seasonal(
+            "/media/windowsshare", "u-{}".format(model))
+        print "the minimum volumes are {}".format(tempmin)
+        plt.plot(range(1, 13), tempmean,label=model)
+        plt.xlabel('Months of the year')
+        plt.ylabel('Sea ice volume (m^3)')
+        plt.title('Seasonal mean total sea ice volume of {}'.format(model))
         plt.fill_between(range(1, 13), tempmean-tempstd, tempmean +
                          tempstd, facecolor='green', alpha=0.2, linestyle="--")
-        plt.title('Seasonal map plot of mean total ice volume for model {}'.format(model))
-        plt.show()    
-        fig.savefig('/home/ben/Desktop/seasonal/seasonal-volume-{}'.format(model))
+        plt.tight_layout()  # making sure the plots do not overlap...
+        plt.ylim(0,2.5e13)
+        plt.show()
+
+def ice_area_seasonal_main():
+    """grabbing dataset for all models, calculating seasonal ice area, plotting."""
+    # vectorizing plotting routine
+    models = ["at053", "au866", "av231", "au872", "au874"]
+    testmodels = ["au866"]
+    fig, ax = plt.subplots(figsize=(8, 8))
+    for i, model in enumerate(models):
+        tempstd, tempmean, tempmax, tempmin = grab.ice_area_seasonal(
+            "/media/windowsshare", "u-{}".format(model))
+        print "the minimum areas are {}".format(tempmin)
+        plt.plot(range(1, 13), tempmean,label=model)
+        plt.xlabel('Months of the year')
+        plt.ylabel('Sea ice area (m^2)')
+        plt.title('Seasonal mean total sea ice area of {}'.format(model))
+        plt.fill_between(range(1, 13), tempmean-tempstd, tempmean +
+                         tempstd, facecolor='green', alpha=0.2, linestyle="--")
+        plt.tight_layout()  # making sure the plots do not overlap...
+        plt.ylim(0,1.8e13)
+        plt.show()
 
 def ice_area_tseries_main():
     """makes a nice time series plot for ice area of a given model..."""
@@ -68,10 +110,10 @@ def ice_area_month_main(modelname,monthnum):
     print ice_area
     plt.title("Sea ice area runs of control model {}\nIn the month of {}, year 2000 forcing".format(
         modelname,monthdict[monthnum]))
-    plt.xlabel("Run number")
+    plt.xlabel("Years in model time")
     plt.ylabel("Total antarctic sea ice area (m^2)")
     stddev = np.std(ice_area)
-    plt.errorbar(range(1,21),ice_area,yerr=stddev,linestyle="None", marker="o",color='b')
+    plt.plot(range(1,21),ice_area,linestyle="None", marker="o",color='b')
     plt.show()
 
 def ice_volume_month_main(modelname,monthnum):
@@ -83,10 +125,10 @@ def ice_volume_month_main(modelname,monthnum):
     print ice_volume
     plt.title("Sea ice volume runs of control model {}\nIn the month of {}, year 2000 forcing".format(
         modelname,monthdict[monthnum]))
-    plt.xlabel("Run number")
+    plt.xlabel("Years in model time")
     plt.ylabel("Total antarctic sea ice volume (m^2)")
     stddev = np.std(ice_volume)
-    plt.errorbar(range(1,21),ice_volume,yerr=stddev,linestyle="None", marker="o",color='b')
+    plt.plot(range(1,21),ice_volume,linestyle="None", marker="o",color='b')
     plt.show()
 
 
@@ -154,7 +196,7 @@ def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
     plt.clim(float(lims["Min"]),float(lims["Max"]))
     #plt.show()
     fig.savefig(
-        '/home/ben/Desktop/anomplots/{}-{}-{}-anom'.format(modelname, varname, monthnum))
+        '/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
 
 def month_map_variance_main(modelname, monthnum, varname):
@@ -336,13 +378,4 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    #['sithick','sispeed','sihc','siflswdbot'
-    myvars = ['siflsensupbot','siflcondtop','siflcondbot','fsurf_ai','fhocn_ai','ardg','dardg1dt','opening','snoice']
-    control = 'u-at053'
-    models = ['u-au866','u-au872','u-au874','u-av231']
-    months=[2,9]
-    for var in myvars:
-        for month in months:
-            month_map_mean_main(control,month,var,"/home/ben/Documents/summer2019/plotlims",False)
-            for model in models:
-                month_map_anom_main(model,month,var,"/home/ben/Documents/summer2019/plotlims",False)
+    ice_volume_seasonal_main()
