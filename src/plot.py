@@ -116,6 +116,25 @@ def ice_area_month_main(modelname,monthnum):
     plt.plot(range(1,21),ice_area,linestyle="None", marker="o",color='b')
     plt.show()
 
+def ice_area_month_main_all(monthnum):
+    """makes a time series plot of ice area for a given month for all models"""
+    monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+             7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+    symboldict = {"u-at053": "o", "u-au866": "s", "u-au872": "p", "u-au874":"v", "u-av231":"D"}
+    fig, ax = plt.subplots(figsize=(8, 8))
+    for model in ["u-at053", "u-au866","u-au872","u-au874","u-av231"]:
+        ice_area = grab.ice_area_month(
+            "/media/windowsshare",model,monthnum)
+        print ice_area
+        plt.title("Sea ice area runs of all models\nIn the month of {}, year 2000 forcing".format(
+            monthdict[monthnum]))
+        plt.xlabel("Years in model time")
+        plt.ylabel("Total antarctic sea ice area (m^2)")
+        plt.plot(range(1,21),ice_area,label=model,linestyle="None", marker=symboldict[model],markersize=5.0)
+    plt.legend(loc='upper right', numpoints=1,prop={'size': 8})
+    fig.savefig('/home/ben/Documents/summer2019docs/metoffice/{}_month_area'.format(monthdict[monthnum]))
+    print "saving as /home/ben/Documents/summer2019docs/metoffice/{}_month_area".format(monthdict[monthnum])
+
 def ice_volume_month_main(modelname,monthnum):
     """makes a time series plot of ice volume for a given month"""
     monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
@@ -126,17 +145,37 @@ def ice_volume_month_main(modelname,monthnum):
     plt.title("Sea ice volume runs of control model {}\nIn the month of {}, year 2000 forcing".format(
         modelname,monthdict[monthnum]))
     plt.xlabel("Years in model time")
-    plt.ylabel("Total antarctic sea ice volume (m^2)")
+    plt.ylabel("Total antarctic sea ice volume (m^3)")
     stddev = np.std(ice_volume)
     plt.plot(range(1,21),ice_volume,linestyle="None", marker="o",color='b')
     plt.show()
 
+def ice_volume_month_main_all(monthnum):
+    """makes a time series plot of ice volume for a given month for all models"""
+    monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+             7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+    symboldict = {"u-at053": "o", "u-au866": "s", "u-au872": "p", "u-au874":"v", "u-av231":"D"}
+    fig,ax = plt.subplots(figsize=(8,8))
+    for model in ["u-at053", "u-au866","u-au872","u-au874","u-av231"]:
+        ice_volume = grab.ice_volume_month(
+            "/media/windowsshare",model,monthnum)
+        print ice_volume
+        plt.title("Sea ice volume runs of all models\nIn the month of {}, year 2000 forcing".format(
+            monthdict[monthnum]))
+        plt.xlabel("Years in model time")
+        plt.ylabel("Total antarctic sea ice volume (m^3)")
+        plt.plot(range(1,21),ice_volume,label=model,linestyle="None", marker=symboldict[model],markersize=5.0)
+    plt.legend(loc='upper right', numpoints=1,prop={'size':8})
+    fig.savefig('/home/ben/Documents/summer2019docs/metoffice/{}_month_volume'.format(monthdict[monthnum]))
+    print "saving as /home/ben/Documents/summer2019docs/metoffice/{}_month_volume".format(monthdict[monthnum])
 
 ############### GENERAL FUNCTIONS FOR MAP PLOTTING ##################################
 
 
 def month_map_mean_main(modelname,monthnum,varname,csvdir,isice):
     """function called when map plots of mean of variable varname are wanted..."""
+    #dictionary to set limits on some plots manually as outliers obscure detail of data. quick fix, will change later
+    limitdict = {"ardg":[0.0,0.72],"fhocn_ai":[-80.0,0],"fsurf_ai":[-60.0,0],"siflcondtop":[-80.0,0.0],"siflsensupbot":[-2400.0,0],"sihc":[-1.6e9,0.0], "sithick":[0,6], "dardg1dt":[0,5], "opening":[0,12.5]}
     lons, lats, myvar,units = grab.month_map_mean(
         "/media/windowsshare",modelname,monthnum,varname,isice)  # grabbing data
     #now saving limits of plot to csv file so that month_map_anom_main can use them
@@ -158,10 +197,10 @@ def month_map_mean_main(modelname,monthnum,varname,csvdir,isice):
         plt.title("{} mean {} in the month of {}".format(
         modelname, varname, monthdict[monthnum]))
         cbar.set_label('{}[{}]'.format(varname,units))
-    #plt.clim(float(lims["Min"]),float(lims["Max"]))
-    #plt.show()
+    plt.clim(limitdict[varname][0],limitdict[varname][1])
+    plt.show()
     fig.savefig(
-        '/home/ben/Desktop/mapplots/{}-{}-{}'.format(modelname, varname, monthnum))
+        '/home/ben/Documents/summer2019docs/metoffice/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
 
 def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
@@ -378,4 +417,9 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
     plt.tight_layout()  # making sure the plots do not overlap...
 
 if __name__=="__main__":
-    ice_volume_seasonal_main()
+    myvars = ['ardg', 'fhocn_ai', 'fsurf_ai', 'siflcondtop', 'siflsensupbot', 'sihc', 'sithick', 'dardg1dt', 'opening']
+    control = 'u-at053'
+    months=[2,9]
+    for var in myvars:
+        for month in months:
+            month_map_mean_main(control,month,var,"/home/ben/Documents/summer2019/plotlims",False)
