@@ -30,7 +30,7 @@ def ice_area_seasonal_main_all():
         plt.tight_layout()  # making sure the plots do not overlap...
         plt.ylim(0,1.8e13)
     plt.legend(bbox_to_anchor=(0.9, 0.3),bbox_transform=plt.gcf().transFigure)
-    plt.show()
+    fig.savefig("/home/ben/Desktop/allmodel.png")
  
 def ice_volume_seasonal_main_all():
     """grabbing dataset for all models, calculating seasonal ice volume, plots all on same graph."""
@@ -49,8 +49,8 @@ def ice_volume_seasonal_main_all():
         plt.tight_layout()  # making sure the plots do not overlap...
         plt.ylim(0,2.5e13)
     plt.legend(bbox_to_anchor=(0.9, 0.3),bbox_transform=plt.gcf().transFigure)
-    plt.show()
-    
+    fig.savefig("/home/ben/Desktop/allmodel-volume.png")
+
 def ice_volume_seasonal_main():
     """grabbing dataset for all models, calculating seasonal ice volume, plotting."""
     # vectorizing plotting routine
@@ -197,10 +197,12 @@ def month_map_mean_main(modelname,monthnum,varname,csvdir,isice):
         plt.title("{} mean {} in the month of {}".format(
         modelname, varname, monthdict[monthnum]))
         cbar.set_label('{}[{}]'.format(varname,units))
-    plt.clim(limitdict[varname][0],limitdict[varname][1])
-    plt.show()
+    try:
+        plt.clim(limitdict[varname][0],limitdict[varname][1])
+    except:
+        print "this variable does not have preset plot limits. Allowing matplotlib to set them."
     fig.savefig(
-        '/home/ben/Documents/summer2019docs/metoffice/{}-{}-{}'.format(modelname, varname, monthnum))
+        '/home/ben/Desktop/mapplots/{}_{}_{}'.format(modelname, varname, monthnum))
     plt.close()
 
 def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
@@ -224,18 +226,17 @@ def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
         cbar.set_label('$\Delta$ {}[{}]'.format(varname,units))
     #generating limits for plots
     try:
-        #try to read them. May have already been generated
-        lims = process.read_lims(varname,monthnum,csvdir)
+        #try to read them. May have already been generate
+        lims = process.read_lims(varname,csvdir)
     except:
         #If they haven't been generated, generate then read them
         print "error with reading limits.. attemping to create limits"
-        process.anom_limit_setup(varname,monthnum,["u-au866","u-au872","u-au874","u-av231"],csvdir)
-        lims = process.read_lims(varname,month,csvdir)
+        process.anom_limit_setup(varname,[2,9],["u-au866","u-au872","u-au874","u-av231"],csvdir)
+        lims = process.read_lims(varname,csvdir)
     print lims
     plt.clim(float(lims["Min"]),float(lims["Max"]))
-    #plt.show()
     fig.savefig(
-        '/home/ben/Desktop/anomplots/{}-{}-{}'.format(modelname, varname, monthnum))
+        '/home/ben/Documents/summer2019docs/metoffice/{}-{}-{}'.format(modelname, varname, monthnum))
     plt.close()
 
 def month_map_variance_main(modelname, monthnum, varname):
@@ -361,15 +362,21 @@ def scatterplot_area_main(modelname, monthnum, varname, latrange, lonrange, outp
     """ visually compares modelname with control model u-at053 by stripping points in selected area of
     spatial property and treats them as a sequence of data. Then creates a scatterplot of the two arrays
     and saves figure in a given output directory outputdir"""
-    lons, lats, modelvar = grab.month_map_mean(
-        "/media/windowsshare", modelname, monthnum, varname)
-    lons1, lats1, controlvar = grab.month_map_mean(
-        "/media/windowsshare", "u-at053", monthnum, varname)
+    lons, lats, modelvar, units = grab.month_map_mean(
+        "/media/windowsshare",modelname,monthnum,varname,True)
+    lons1, lats1, controlvar, units = grab.month_map_mean(
+        "/media/windowsshare","u-at053",monthnum,varname,True)
+    lons2, lats2, tarea, units = grab.month_map_mean(
+        "/media/windowsshare",modelname,monthnum,"tarea",True)
     latmin = latrange[0]
     latmax = latrange[1]
     lonmin = lonrange[0]
     lonmax = lonrange[1]
 
+    # trying to weight each point in scatterplot by overall area it has rather than concentration
+    print "Shape of modelvar is {}\nShape of controlvar is {}\nShape of tarea is {}".format(
+        np.shape(modelvar),np.shape(controlvar),np.shape(tarea)) 
+    
     # making a mask so that we only plot the values which fall inside the bounded range for the model
     latcond = np.logical_or(lats < latmin, lats > latmax)
     loncond = np.logical_or(lons < lonmin, lons > lonmax)
@@ -381,18 +388,27 @@ def scatterplot_area_main(modelname, monthnum, varname, latrange, lonrange, outp
     # now masking the out of bounds values
     modelvar_masked = np.ma.masked_where(cond, modelvar)
     controlvar_masked = np.ma.masked_where(cond1, controlvar)
+    tarea_masked = np.ma.masked_where(cond,tarea)
 
     # first stripping modelvar and controlvar of spatial data.. converting them into a sequence
     # now we want the entries which do NOT match the prior condition of being outside of the selected area.
     modelvar_seq = modelvar[np.logical_not(cond)]
     controlvar_seq = controlvar[np.logical_not(cond1)]
-    
+    tarea_seq = tarea[np.logical_not(cond)]    
+
+    print len(modelvar_seq)
+    print len(controlvar_seq)
+    print len(tarea_seq)
+
     #now making scatter plot
     fig, ax = plt.subplots(figsize=(8, 8))
-    plt.scatter(modelvar_seq,controlvar_seq)
+    plt.scatter(modelvar_seq*tarea_seq,controlvar_seq*tarea_seq)
     plt.title("scatterplot comparing variable {} for {} with control".format(varname,modelname))
     plt.xlabel(modelname)
     plt.ylabel("u-at053")
+    #plt.xlim([0.0,2.5e9])
+    #plt.ylim([0.0,2.5e9])
+    plt.plot(modelvar_seq*tarea_seq,modelvar_seq*tarea_seq,"r")
     plt.show()
     fig.savefig("{}/{}-{}-{}-scatter.png".format(outputdir,modelname,varname,monthnum))
 
@@ -416,10 +432,34 @@ def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
                      facecolor='green', alpha=0.2, linestyle="--")
     plt.tight_layout()  # making sure the plots do not overlap...
 
+def testplot(modelname,varname):
+    """function called to test whether or not grabbing functions are grabbing correct data, comparing to Panoply plots..."""
+    lons, lats, myvar = grab.month_map_test(
+        "/media/windowsshare",modelname,varname)  # grabbing data
+    #now saving limits of plot to csv file so that month_map_anom_main can use them
+    fig, ax = plt.subplots(figsize=(8, 8))
+    m = Basemap(resolution='h', projection='spstere',
+                lat_0=-90, lon_0=-180, boundinglat=-55)
+    m.drawcoastlines(linewidth=1)
+    m.drawlsmask(land_color='grey',ocean_color='grey',lakes=True)
+    m.drawmapboundary(linewidth=1)
+    cm = m.pcolormesh(lons, lats, myvar, latlon=True)
+    cbar = m.colorbar(cm, location='bottom', pad="5%")
+    plt.show()
+    plt.close()
+
+
+
 if __name__=="__main__":
-    myvars = ['ardg', 'fhocn_ai', 'fsurf_ai', 'siflcondtop', 'siflsensupbot', 'sihc', 'sithick', 'dardg1dt', 'opening']
-    control = 'u-at053'
+    #icevars = ["aice","sithick","snoice","dardg1dt","ardg","opening","fhocn_ai","fsurf_ai","siflcondbot","siflcondtop","sispeed"]
+    #testvars = ["aice"]
+    #control = 'u-at053'
     months=[2,9]
-    for var in myvars:
+    models = ["u-au866","u-av231","u-au872","u-au874"]
+    #for model in models:
+    #    for month in months:
+    #        for variable in icevars:
+    #            month_map_anom_main(model,month,variable,"/home/ben/Documents/summer2019/plotlims",True)
+    for model in models:
         for month in months:
-            month_map_mean_main(control,month,var,"/home/ben/Documents/summer2019/plotlims",False)
+            scatterplot_area_main(model,month,"aice",[-86.53,-63.73],[160,230],"/home/ben/Desktop/")

@@ -274,6 +274,7 @@ def month_map_anom(path, modelname, monthnum, varname,isice):
             print "grabbing {}".format(filename)
             testdata = Dataset(filename)
             if monthcount == 0:  # latitude and longitude of grid cells does not change... also dims of myvar dont change
+                print getattr(testdata,testdata.ncattrs()[7]) #just getting file history to make sure it is the right file
                 lats = np.ma.array(
                     testdata.variables['TLAT'][:, :], dtype='float64')
                 cond = lats < -50.0  # we only want stuff near antarctica
@@ -473,3 +474,23 @@ def month_map_data(path, modelname, monthnum, varname):
 
     varlist = np.asarray(varlist)
     return lons, lats, varlist
+
+def month_map_test(path, modelname,varname):
+    os.chdir("../../../../")
+    os.chdir("{}/{}/{}".format(path, modelname, "ice"))
+    monthcount = 0
+    files=sorted(os.listdir('./'))
+    #we want the first file
+    filename = files[0]
+    print "grabbing {}".format(filename)
+    testdata = Dataset(filename)
+    lats = np.ma.array(
+        testdata.variables['TLAT'][:, :], dtype='float64')
+    lons = np.ma.array(
+        testdata.variables['TLON'][:, :], dtype='float64')
+    myvar = np.ma.squeeze(np.ma.array(
+        testdata.variables[str(varname)][:, :], dtype='float64'))
+    testdata.close()
+    return lons, lats, myvar
+
+

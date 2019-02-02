@@ -31,27 +31,28 @@ def t_test_gridpoint(lons,lats,modelvar,controlvar,pval_filter, t_or_p):
     else:
         return pvals
 
-def read_lims(varname,month,csvdir):
+def read_lims(varname,csvdir):
     """reads upper and lower limits for plot from the dir csvdir in the file varname.txt and returns them"""
     #first changing into correct directory
     os.chdir(csvdir)
     print os.listdir("./")    
     
-    with open("{}_{}.txt".format(varname,month)) as File:
+    with open("{}.txt".format(varname)) as File:
         reader = csv.DictReader(File)
         for row in reader:
             return row #there should only be one row
 
-def anom_limit_setup(varname,month,models,csvdir):
+def anom_limit_setup(varname,months,models,csvdir):
     """sets upper and lower bound for a variable for anomaly plots based on the max/min value TOTAL across all anomalies"""
     for model in models:
-        lons,lats,myvar,totaldiff,units = grab.month_map_anom("/media/windowsshare",model,month,varname,False)
-        maxes = []
-        mins = []
-        maxes.append(np.ma.max(myvar))
-        mins.append(np.ma.min(myvar))
+            maxes = []
+            mins = []
+            for month in months:
+                lons,lats,myvar,totaldiff,units = grab.month_map_anom("/media/windowsshare",model,month,varname,False)
+                maxes.append(np.ma.max(myvar))
+                mins.append(np.ma.min(myvar))
     os.chdir(csvdir)
-    with open("{}_{}.txt".format(varname,month),"w+") as csv_file:
+    with open("{}.txt".format(varname),"w+") as csv_file:
         fieldnames=['Max','Min']
         writer = csv.DictWriter(csv_file,fieldnames=fieldnames) 
         writer.writeheader()
