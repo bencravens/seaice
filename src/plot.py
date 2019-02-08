@@ -362,21 +362,15 @@ def scatterplot_area_main(modelname, monthnum, varname, latrange, lonrange, outp
     """ visually compares modelname with control model u-at053 by stripping points in selected area of
     spatial property and treats them as a sequence of data. Then creates a scatterplot of the two arrays
     and saves figure in a given output directory outputdir"""
-    lons, lats, modelvar, units = grab.month_map_mean(
-        "/media/windowsshare",modelname,monthnum,varname,True)
-    lons1, lats1, controlvar, units = grab.month_map_mean(
-        "/media/windowsshare","u-at053",monthnum,varname,True)
-    lons2, lats2, tarea, units = grab.month_map_mean(
-        "/media/windowsshare",modelname,monthnum,"tarea",True)
+    lons, lats, modelvar = grab.ice_area_map_mean(
+        "/media/windowsshare",modelname,monthnum)
+    lons1, lats1, controlvar = grab.ice_area_map_mean(
+        "/media/windowsshare","u-at053",monthnum)
     latmin = latrange[0]
     latmax = latrange[1]
     lonmin = lonrange[0]
     lonmax = lonrange[1]
 
-    # trying to weight each point in scatterplot by overall area it has rather than concentration
-    print "Shape of modelvar is {}\nShape of controlvar is {}\nShape of tarea is {}".format(
-        np.shape(modelvar),np.shape(controlvar),np.shape(tarea)) 
-    
     # making a mask so that we only plot the values which fall inside the bounded range for the model
     latcond = np.logical_or(lats < latmin, lats > latmax)
     loncond = np.logical_or(lons < lonmin, lons > lonmax)
@@ -388,28 +382,21 @@ def scatterplot_area_main(modelname, monthnum, varname, latrange, lonrange, outp
     # now masking the out of bounds values
     modelvar_masked = np.ma.masked_where(cond, modelvar)
     controlvar_masked = np.ma.masked_where(cond1, controlvar)
-    tarea_masked = np.ma.masked_where(cond,tarea)
 
     # first stripping modelvar and controlvar of spatial data.. converting them into a sequence
     # now we want the entries which do NOT match the prior condition of being outside of the selected area.
     modelvar_seq = modelvar[np.logical_not(cond)]
     controlvar_seq = controlvar[np.logical_not(cond1)]
-    tarea_seq = tarea[np.logical_not(cond)]    
-
-    print len(modelvar_seq)
-    print len(controlvar_seq)
-    print len(tarea_seq)
 
     #now making scatter plot
     fig, ax = plt.subplots(figsize=(8, 8))
-    plt.scatter(modelvar_seq*tarea_seq,controlvar_seq*tarea_seq)
-    plt.title("scatterplot comparing variable {} for {} with control".format(varname,modelname))
+    plt.scatter(modelvar_seq,controlvar_seq)
+    plt.title("scatterplot comparing variable aice*tarea for {} with control".format(varname,modelname))
     plt.xlabel(modelname)
     plt.ylabel("u-at053")
     #plt.xlim([0.0,2.5e9])
     #plt.ylim([0.0,2.5e9])
-    plt.plot(modelvar_seq*tarea_seq,modelvar_seq*tarea_seq,"r")
-    plt.show()
+    plt.plot(modelvar_seq,modelvar_seq,"r")
     fig.savefig("{}/{}-{}-{}-scatter.png".format(outputdir,modelname,varname,monthnum))
 
 def plot(input_x, input_y, xlab, ylab, title, plotarr, std_devs, maxes, mins):
@@ -448,18 +435,60 @@ def testplot(modelname,varname):
     plt.show()
     plt.close()
 
+def plot_area_main(modelname, monthnum, outputdir,xlim,ylim):
+    """plots the selected snow + ice thickness for the given area"""
+    #grabbing sea ice thickness
+    lons, lats, sithick, units = grab.month_map_mean(
+        "/media/windowsshare", modelname, monthnum, "hi",True)
+    #grabbing snow thickness 
+    lons, lats, sisnthick, units = grab.month_map_mean(
+        "/media/windowsshare", modelname, monthnum, "hs",True)
+    totalthick= sithick + sisnthick
+    print np.ma.mean(sithick)
+    print np.ma.mean(sisnthick)
+    
+    #now we will make the plot
+    fig, ax = plt.subplots(figsize=(8, 8))
+    m = Basemap(resolution='h', projection='spstere',
+                lat_0=-90, lon_0=-180, boundinglat=-55)
+    m.drawmapboundary(linewidth=0.3)
+    cm = m.pcolormesh(lons, lats, totalthick, latlon=True, cmap='gist_rainbow')
+    cbar = m.colorbar(cm, location='bottom', pad="5%")
+    m.shadedrelief()
+    plt.clim([0.0,4.0])
+    plt.xlim([xlim[0],xlim[1]])
+    plt.ylim([ylim[0],ylim[1]])
+    plt.title("hi + hs in selected area for {}".format(modelname))
+    plt.show()
+    #fig.savefig("/home/ben/Desktop/{}_pat".format(modelname))
 
+def plot_all(modelname,monthnum,var1,varcond,xlim,ylim,var2="aice"):
+    """plots all files of a model for a given variable and saves to an output directory. Optionally plots varname+varname2 if varcond==True"""
+    if varcond:
+        lons,lats,vars1,varnames1 = grab.month_map_data("/media/windowsshare",modelname,monthnum,var1)
+        lons,lats,vars2,varnames2 = grab.month_map_data("/media/windowsshare",modelname,monthnum,var2)
+        for i in xrange(20):
+            var1_slab = vars1[i,:,:]
+            var2_slab = vars2[i,:,:]
+            total_slab = var1_slab + var2_slab
+            #now we will make the plot
+            fig, ax = plt.subplots(figsize=(8, 8))
+            m = Basemap(resolution='h', projection='spstere',
+                lat_0=-90, lon_0=-180, boundinglat=-55)
+            m.drawmapboundary(linewidth=0.3)
+            cm = m.pcolormesh(lons, lats, total_slab, latlon=True, cmap='gist_rainbow')
+            cbar = m.colorbar(cm, location='bottom', pad="5%")
+            m.shadedrelief()
+            plt.clim([0.0,4.0])
+            plt.xlim([xlim[0],xlim[1]])
+            plt.ylim([ylim[0],ylim[1]])
+            plt.title("plot of total of variables {}+{}\n for file {} \n month# {}".format(var1,var2,varnames1[i],monthnum))
+            print "saving picture number {}/20".format(i+1)
+            fig.savefig("/home/ben/Desktop/{}_{}_{}".format(modelname,monthnum,i))
+            plt.close()
 
 if __name__=="__main__":
-    #icevars = ["aice","sithick","snoice","dardg1dt","ardg","opening","fhocn_ai","fsurf_ai","siflcondbot","siflcondtop","sispeed"]
-    #testvars = ["aice"]
-    #control = 'u-at053'
-    months=[2,9]
-    models = ["u-au866","u-av231","u-au872","u-au874"]
+    models = ["u-at053","u-au866","u-av231","u-au872","u-au874"]
     #for model in models:
-    #    for month in months:
-    #        for variable in icevars:
-    #            month_map_anom_main(model,month,variable,"/home/ben/Documents/summer2019/plotlims",True)
-    for model in models:
-        for month in months:
-            scatterplot_area_main(model,month,"aice",[-86.53,-63.73],[160,230],"/home/ben/Desktop/")
+    #    plot_area_main(model,11,"/home/ben/Desktop/",[-4.55e6,-4.17e6],[-2.71e6,-2.18e6])
+    plot_all("u-at053",11,"sithick",True,[-4.55e6,-4.17e6],[-2.71e6,-2.18e6],"sisnthick")

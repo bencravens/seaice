@@ -437,12 +437,14 @@ def month_map_data(path, modelname, monthnum, varname):
     os.chdir("{}/{}/{}".format(path, modelname, "ice"))
     monthcount = 0
     varlist = []
+    filenames = []
     for filename in (sorted(os.listdir('./'))):
         # grabbing month from filename
         monthstr = filename[19:21]
         # we only want the files of a certain month given by monthnum
         if int(monthstr) == monthnum:
             print "grabbing {}".format(filename)
+            filenames.append(filename)
             testdata = Dataset(filename)
             if monthcount == 0:  # dims of aice dont change
                 lats = np.ma.array(
@@ -472,8 +474,8 @@ def month_map_data(path, modelname, monthnum, varname):
                 testdata.close()
                 monthcount += 1  # we have added the data for one month.
 
-    varlist = np.asarray(varlist)
-    return lons, lats, varlist
+    varlist = np.ma.asarray(varlist)
+    return lons, lats, varlist, filenames
 
 def month_map_test(path, modelname,varname):
     os.chdir("../../../../")
@@ -492,5 +494,44 @@ def month_map_test(path, modelname,varname):
         testdata.variables[str(varname)][:, :], dtype='float64'))
     testdata.close()
     return lons, lats, myvar
+
+def ice_area_map_mean(path, modelname, monthnum):
+    os.chdir("../../../../")
+    os.chdir("{}/{}/{}".format(path, modelname, "ice"))
+    monthcount = 0
+    for filename in (sorted(os.listdir('./'))):
+        # grabbing month from filename
+        monthstr = filename[19:21]
+        # we only want the files of a certain month given by monthnum
+        if int(monthstr) == monthnum:
+            print "grabbing {}".format(filename)
+            testdata = Dataset(filename)
+            if monthcount == 0:  # latitude and longitude of grid cells does not change... also dims of myvar dont change
+                lats = np.ma.array(
+                    testdata.variables['TLAT'][:, :], dtype='float64')
+                lons = np.ma.array(
+                    testdata.variables['TLON'][:, :], dtype='float64')
+                aice = np.ma.squeeze(np.ma.array(
+                    testdata.variables['aice'][:,:], dtype='float64'))
+                tarea = np.ma.squeeze(np.ma.array(
+                    testdata.variables['tarea'][:,:], dtype='float64'))
+                icearea_total = []  # making total myvar
+                icearea_total.append(aice*tarea)
+                testdata.close()
+                monthcount += 1
+            else:
+                aice = np.ma.squeeze(np.ma.array(
+                    testdata.variables['aice'][:, :], dtype='float64'))
+                #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                icearea_total.append(aice*tarea)
+                # making sure we don't have too many files open at once...
+                testdata.close()
+                monthcount += 1  # we have added the data for one month.
+    #now taking mean of all datapoints
+    #first convert to np.ma array
+    icearea_total = np.ma.asarray(icearea_total)
+    means = icearea_total.mean(axis=0)
+    return lons, lats, means
+
 
 
