@@ -11,6 +11,7 @@ import os
 import sys
 import csv
 
+
 def t_test_gridpoint(lons,lats,modelvar,controlvar,pval_filter, t_or_p):
     """with data given, performs the student's t-test on each gridpoint of an area for the new model (modelval) and the control model(controlvar) and returns either the t-statistic where the corresponding pvalue is below pval filter or p value at each point depending on t_or_p (if true, returns tstat, if false returns pvalues)"""
     #first checking that modelvar and control var are the same shape
@@ -67,12 +68,15 @@ def anom_limit_setup(varname,months,models,csvdir):
         writer.writerow(data)
     print "finished writing limits. They are {} and {}".format(max(maxes),min(mins))
 
+def total_ice_diff(path,modelname,monthnum):
+    """function to calculate the total difference in ice volume between a model and a control for a give month"""  
+    lons, lats, aice_diff, total_aice_diff, units = grab.month_map_anom(path,modelname,monthnum,"aice",True)
+    lons, lats, sithick_diff, total_sithick_diff, units = grab.month_map_anom(path,modelname,monthnum,"sithick",True)
+    print "total aice change is {}".format(np.sum(aice_diff))
+    print "shape of aice_diff is {}".format(np.shape(aice_diff))
+    print "shape of sithick diff is {}".format(np.shape(sithick_diff))
+    print "total ice volume difference is {}".format(np.sum(np.multiply(aice_diff,sithick_diff)))
+    
 
-
-
-
-
-
-
-
-
+if __name__=="__main__":
+    total_ice_diff("/media/windowsshare/","u-au866",2) 

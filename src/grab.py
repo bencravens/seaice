@@ -144,7 +144,6 @@ def ice_area_tseries(path, modelname):
     # Now that we have all of the data we will return it
     return ice_area
 
-
 def ice_area_month(path, modelname, monthnum):
     os.chdir("../../../../")
     os.chdir("{}/{}/{}".format(path, modelname, "ice"))
@@ -260,8 +259,7 @@ def month_map_mean(path, modelname, monthnum, varname,isice):
     means = myvar_total.mean(axis=0)
     return lons, lats, means, units
 
-
-def month_map_anom(path, modelname, monthnum, varname,isice):
+def month_map_anom_test(path, modelname, monthnum, varname,isice):
     """this function loads in the control model (u-at053), and makes map plots of average monthly difference between it and a given model for a parameter."""
     os.chdir("../../../../")
     os.chdir("{}/{}/{}".format(path, modelname, "ice"))
@@ -275,27 +273,18 @@ def month_map_anom(path, modelname, monthnum, varname,isice):
             testdata = Dataset(filename)
             if monthcount == 0:  # latitude and longitude of grid cells does not change... also dims of myvar dont change
                 print getattr(testdata,testdata.ncattrs()[7]) #just getting file history to make sure it is the right file
-                lats = np.ma.array(
-                    testdata.variables['TLAT'][:, :], dtype='float64')
-                cond = lats < -50.0  # we only want stuff near antarctica
-                lons = np.ma.array(
-                    testdata.variables['TLON'][:, :], dtype='float64')[cond]
                 myvar = np.ma.squeeze(np.ma.array(
-                    testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                    testdata.variables[str(varname)][:, :], dtype='float64'))
                 aice = np.ma.squeeze(np.ma.array(
-                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                    testdata.variables['aice'][:,:], dtype='float64'))
+                myvar = myvar[0:125,:]
+                aice = aice[0:125,:]
                 if isice==False:
                     #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
                     icecond = aice == 0
                     print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
                     myvar = np.ma.masked_where(icecond,myvar)
-                lats = lats[cond]
-                # size should be the same for all of them...
-                size = lons.shape[0]
                 # now reshaping to be proper size
-                lats = np.reshape(lats, [int(size/360.0), 360])
-                lons = np.reshape(lons, [int(size/360.0), 360])
-                myvar = np.reshape(myvar, [int(size/360.0), 360])
                 myvar_total = []
                 myvar_total.append(myvar)
                 units = testdata.variables[varname].units
@@ -303,15 +292,15 @@ def month_map_anom(path, modelname, monthnum, varname,isice):
                 monthcount += 1
             else:
                 myvar = np.ma.squeeze(np.ma.array(
-                    testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                    testdata.variables[str(varname)][:, :], dtype='float64'))
                 aice = np.ma.squeeze(np.ma.array(
-                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                    testdata.variables['aice'][:,:], dtype='float64'))
+                myvar = myvar[0:125,:]
+                aice = aice[0:125,:]
                 if isice==False:
                     #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
                     icecond = aice == 0
-                    print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
                     myvar = np.ma.masked_where(icecond,myvar)
-                myvar = np.reshape(myvar, [int(size/360.0), 360])
                 myvar_total.append(myvar)
                 # making sure we don't have too many files open at once...
                 testdata.close()
@@ -329,45 +318,42 @@ def month_map_anom(path, modelname, monthnum, varname,isice):
             print "grabbing CONTROL: {}".format(filename)
             testdata = Dataset(filename)
             if monthcount == 0:  # dims of myvar dont change
-                lats = np.ma.array(
-                    testdata.variables['TLAT'][:, :], dtype='float64')
-                cond = lats < -50.0
-                tarea = np.ma.array(
-                    testdata.variables['tarea'][:, :], dtype='float64')[cond]
-                lons = np.ma.array(
-                    testdata.variables['TLON'][:, :], dtype='float64')[cond]
+                lats = np.ma.squeeze(np.ma.array(
+                    testdata.variables['TLAT'][:, :], dtype='float64'))
+                tarea = np.ma.squeeze(np.ma.array(
+                    testdata.variables['tarea'][:, :], dtype='float64'))
+                lons = np.ma.squeeze(np.ma.array(
+                    testdata.variables['TLON'][:, :], dtype='float64'))
                 myvar = np.ma.squeeze(np.ma.array(
-                    testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                    testdata.variables[str(varname)][:, :], dtype='float64'))
                 aice = np.ma.squeeze(np.ma.array(
-                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                    testdata.variables['aice'][:,:], dtype='float64'))
+                lats = lats[0:125,:]
+                tarea = tarea[0:125,:]
+                lons = lons[0:125,:]
+                myvar = myvar[0:125,:]
+                aice = aice[0:125,:]
                 if isice==False:
                     #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
                     icecond = aice == 0
                     print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
                     myvar = np.ma.masked_where(icecond,myvar)
-                lats = lats[cond]
-                # size should be the same for all of them...
-                size = lons.shape[0]
-                # now reshaping to be proper size
-                lats = np.reshape(lats, [int(size/360.0), 360])
-                lons = np.reshape(lons, [int(size/360.0), 360])
-                myvar = np.reshape(myvar, [int(size/360.0), 360])
-                tarea = np.reshape(tarea, [int(size/360.0), 360])
                 myvar_total_control = []  # making total myvar
                 myvar_total_control.append(myvar)
                 testdata.close()
                 monthcount += 1
             else:
                 myvar = np.ma.squeeze(np.ma.array(
-                    testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
+                    testdata.variables[str(varname)][:, :], dtype='float64'))
                 aice = np.ma.squeeze(np.ma.array(
-                    testdata.variables['aice'][:,:], dtype='float64'))[cond]
+                    testdata.variables['aice'][:,:], dtype='float64'))
+                myvar = myvar[0:125,:]
+                aice = aice[0:125,:]
                 if isice==False:
                     #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
                     icecond = aice == 0
                     print "icecond shape is {}, myvar shape is {}".format(icecond.shape,myvar.shape)
                     myvar = np.ma.masked_where(icecond,myvar)
-                myvar = np.reshape(myvar, [int(size/360.0), 360])
                 myvar_total_control.append(myvar)
                 # making sure we don't have too many files open at once...
                 testdata.close()
@@ -383,7 +369,6 @@ def month_map_anom(path, modelname, monthnum, varname,isice):
 
     # now returning the lon,lat and anomaly of myvar
     return lons, lats, myvar_diff, total_diff, units
-
 
 def month_map_stddev(path, modelname, monthnum, varname):
     """given a path to a model, the name of the model and a number denoting a month, calculate the std_dev of the variable given for that month at each gridpoint"""
@@ -492,8 +477,10 @@ def month_map_test(path, modelname,varname):
         testdata.variables['TLON'][:, :], dtype='float64')
     myvar = np.ma.squeeze(np.ma.array(
         testdata.variables[str(varname)][:, :], dtype='float64'))
+    tarea = np.ma.squeeze(np.ma.array(
+        testdata.variables[str(varname)][:, :], dtype='float64'))
     testdata.close()
-    return lons, lats, myvar
+    return lons[0:125,:], lats[0:125,:], myvar[0:125,:], tarea[0:125,:]
 
 def ice_area_map_mean(path, modelname, monthnum):
     os.chdir("../../../../")

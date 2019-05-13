@@ -207,8 +207,9 @@ def month_map_mean_main(modelname,monthnum,varname,csvdir,isice):
 
 def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
     """function called when anomaly map plots of variable varname are wanted..."""
-    lons, lats, myvar, total_diff, units = grab.month_map_anom(
+    lons, lats, myvar, total_diff, units = grab.month_map_anom_test(
         "/media/windowsshare", modelname, monthnum, varname,isice)  # grabbing data
+    print("total difference in variable {} is {}".format(varname,total_diff))
     fig, ax = plt.subplots(figsize=(8, 8))
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
@@ -236,7 +237,32 @@ def month_map_anom_main(modelname, monthnum, varname,csvdir,isice):
     print lims
     plt.clim(float(lims["Min"]),float(lims["Max"]))
     fig.savefig(
-        '/home/ben/Documents/summer2019docs/metoffice/{}-{}-{}'.format(modelname, varname, monthnum))
+        '/home/ben/Desktop/{}-{}-{}'.format(modelname, varname, monthnum))
+    plt.close()
+
+def month_map_anom_volume(modelname, monthnum):
+    """function called when anomaly map plots of variable varname are wanted..."""
+    lons, lats, aice, total_diff_aice, units = grab.month_map_anom_test(
+        "/media/windowsshare", modelname, monthnum, "aice", True)  # grabbing data
+    print("total difference in variable {} is {}".format("aice",total_diff_aice))
+    lons, lats, sithick, total_diff_sithick, units = grab.month_map_anom_test(
+        "/media/windowsshare", modelname, monthnum, "sithick", False)
+    lonstest, latstest, myvartest, tarea = grab.month_map_test("/media/windowsshare",modelname,"aice")
+    concentration = np.multiply(aice,tarea)
+    fig, ax = plt.subplots(figsize=(8, 8))
+    m = Basemap(resolution='h', projection='spstere',
+                lat_0=-90, lon_0=-180, boundinglat=-55)
+    m.drawcoastlines(linewidth=1)
+    m.drawmapboundary(linewidth=1)
+    m.drawlsmask(land_color='grey', ocean_color='grey', lakes=True)
+    cm = m.pcolormesh(lons, lats, concentration, latlon=True, cmap='jet')
+    monthdict = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+                 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+    cbar = m.colorbar(cm, location='bottom', pad="5%")
+    plt.title("{} total sea ice concentration anomaly in the month of {}".format(modelname,monthdict[monthnum]))
+    plt.clim([-0.2,0.2])
+    fig.savefig(
+        '/home/ben/Desktop/totalanom_{}_{}.png'.format(modelname,monthnum))
     plt.close()
 
 def month_map_variance_main(modelname, monthnum, varname):
@@ -341,7 +367,7 @@ def t_test_area_main(modelname, monthnum, varname, latrange, lonrange, outputdir
     plt.show()
 
     # now that we've done that, it's time to do the area-wise t-test.
-    # first stripping modelvar and controlvar of sparial data.. converting them into a sequence
+    # first stripping modelvar and controlvar of spatial data.. converting them into a sequence
 
     # now we want the entries which do NOT match the prior condition of being outside of the selected area.
     modelvar_seq = modelvar[np.logical_not(cond)]
@@ -488,7 +514,8 @@ def plot_all(modelname,monthnum,var1,varcond,xlim,ylim,var2="aice"):
             plt.close()
 
 if __name__=="__main__":
-    models = ["u-at053","u-au866","u-av231","u-au872","u-au874"]
-    #for model in models:
-    #    plot_area_main(model,11,"/home/ben/Desktop/",[-4.55e6,-4.17e6],[-2.71e6,-2.18e6])
-    plot_all("u-at053",11,"sithick",True,[-4.55e6,-4.17e6],[-2.71e6,-2.18e6],"sisnthick")
+    models = ["u-au866","u-av231"]
+    for model in models:
+        month_map_anom_volume(model,2)
+        month_map_anom_volume(model,9)
+    #plot_all("u-at053",11,"sithick",True,[-4.55e6,-4.17e6],[-2.71e6,-2.18e6],"sisnthick")
