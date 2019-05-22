@@ -520,5 +520,42 @@ def ice_area_map_mean(path, modelname, monthnum):
     means = icearea_total.mean(axis=0)
     return lons, lats, means
 
+def NSIDC_data(path,month):
+    #function to grab ice concentration data downloaded from the NSIDC database and return it.
+    #this function also generates latitude and longitude data and returns that based on the tools outlined at https://nsidc.org/data/smmr_ssmi/tools#pixel_area
+    #directory should have structure 
+    """
+            ./monthnum1/ folder with net cdf files for month # monthnum1 
+            ./lats.dat
+            ./lons.dat
+            ./monthnum2/ folder with netcdf files for month # monthnum2
+    """
+    
+    os.chdir(path)
+    
+    #grabbing lats and lons from datafiles.. they should be in parent directory
+    latlon = []
+    for filename in ['lats.dat','lons.dat']:
+        x,y = [316,332] #setting shape
+        data = np.fromfile(filename,dtype='int32',count=x*y) 
+        array = np.reshape(data, [x,y],order='F')
+        latlon.append(array)
+    lats = latlon[0]
+    lons = latlon[1]
+    lats = lats/100000.0
+    lons = lons/100000.0
+ 
+    #now we want the ice concentration files
+    os.chdir(month) 
+    icedata = []
+    for filename in sorted(os.listdir("./")):
+        testdata = Dataset(filename)
+        aice = np.ma.squeeze(np.ma.array(testdata.variables['Band1'][:,:], dtype='float32'))
+        #Band 1 is (y,x) not (x,y).
+        aice = np.swapaxes(aice,0,1)
+        icedata.append(aice)
+    
+    #take the mean for concentration
+    icemean = np.mean(icedata,axis=0)
 
-
+    return lons, lats, icemean
