@@ -10,6 +10,7 @@ import scipy
 from scipy import stats
 import os
 import sys
+from scipy.interpolate import griddata
 
 ######## SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
@@ -514,12 +515,12 @@ def plot_all(modelname,monthnum,var1,varcond,xlim,ylim,var2="aice"):
             fig.savefig("/home/ben/Desktop/{}_{}_{}".format(modelname,monthnum,i))
             plt.close()
 
-def regrid(arr1,lat1,lon1,arr2,lat2,lon2):
+def regrid(arr1,lats1,lons1,arr2,lats2,lons2):
     """takes two netCDF arrays and their respective latitudes and longitudes and regrids 
     both arrays to be on the same grid. It then plots them and saves the plot, masking the areas where the grid does not overlap."""
     #NOTE!!!!!!!! Here arr1 should be the model data and arr2 should be the NSIDC data (this is because the model has coarser resolution
     # in the area that we are plotting over. 
-    
+
     #blank out the areas in 
     dpalette=plt.cm.RdBu_r
     dpalette.set_bad(alpha=0.0)
@@ -542,28 +543,26 @@ def regrid(arr1,lat1,lon1,arr2,lat2,lon2):
 
     # ttest for the 2 datasets, assuming time is in 0th dimension (else change axis argument)
     (ttest,pval) = stats.ttest_rel(gdata1,gdata2,axis=0)
+    print(arr1.mask)
+    print(np.mean(pval))
 
     # make mask of missing data (ie land)
     mask = np.zeros((ny,nx))
-    mask[np.logical_or(arr1.mask,pval>0.05)] = 1
+    #pval = np.ma.asarray(pval)
+    mask[np.ma.logical_or(arr1.mask,pval>0.05)] = 1  
     gmask = griddata((lons1.ravel(),lats1.ravel()),mask.ravel(),(glons,glats),method='cubic')
-    garr1 = np.ma.masked_array(gdata1,gmask>0.5) # masked, gridded array of arr1
-
-    mask = np.zeros((ny,nx)) 
-    mask[np.logical_or(arr1.mask,pval>0.05)] = 1
-    gmask = griddata((lons2.ravel(),lats2.ravel()),mask.ravel(),(glons,glats),method='cubic')
-    garr2 = np.ma.masked_array(gdata2,gmask>0.5) # masked, gridded array of arr2
-
+    garr1 = np.ma.masked_array(gdata1,gmask>0.5) # masked, gridded array of arr
 
     # plot difference between the 2 datasets, masking out everywhere where the difference is not significant
-    cs=m.contourf(glons,glats,garr1-garr2,latlon=True,
+    cs=m.pcolormesh(glons,glats,gdata1-gdata2,latlon=True,
     cmap=dpalette)
 
     m.drawcoastlines()
     cbar = m.colorbar(cs,location='bottom',pad="5%",extend='both')
     cbar.set_label('[0-1]') # or use % if *100
     ax.set_title("test title")
-    fig.savefig("~/Desktop/")
+    fig.savefig("/home/ben/Desktop/test.png")
+    plt.show()
     plt.close(fig)
 
 

@@ -500,17 +500,15 @@ def ice_area_map_mean(path, modelname, monthnum):
                     testdata.variables['TLON'][:, :], dtype='float64')
                 aice = np.ma.squeeze(np.ma.array(
                     testdata.variables['aice'][:,:], dtype='float64'))
-                tarea = np.ma.squeeze(np.ma.array(
-                    testdata.variables['tarea'][:,:], dtype='float64'))
                 icearea_total = []  # making total myvar
-                icearea_total.append(aice*tarea)
+                icearea_total.append(aice)
                 testdata.close()
                 monthcount += 1
             else:
                 aice = np.ma.squeeze(np.ma.array(
                     testdata.variables['aice'][:, :], dtype='float64'))
                 #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
-                icearea_total.append(aice*tarea)
+                icearea_total.append(aice)
                 # making sure we don't have too many files open at once...
                 testdata.close()
                 monthcount += 1  # we have added the data for one month.
@@ -552,10 +550,19 @@ def NSIDC_data(path,month):
         testdata = Dataset(filename)
         aice = np.ma.squeeze(np.ma.array(testdata.variables['Band1'][:,:], dtype='float32'))
         #Band 1 is (y,x) not (x,y).
-        aice = np.swapaxes(aice,0,1)
-        icedata.append(aice)
-    
+        aice = np.transpose(aice)
+        [x,y] = np.shape(aice)
+        for i in range(x):
+            aice[i,:] = np.flip(aice[i,:])
+        icedata.append(aice)        
+ 
     #take the mean for concentration
     icemean = np.mean(icedata,axis=0)
+    
+    #need to remove masked points which are above a certain maximum
+    #all points about 1500 correspond to land mass
+    icemean = np.ma.masked_where(icemean>1500,icemean)    
+    #normalizing
+    icemean = 1.0 / (np.max(icemean)) * icemean
 
     return lons, lats, icemean
