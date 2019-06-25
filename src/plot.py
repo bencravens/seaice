@@ -519,36 +519,54 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2):
     """takes two netCDF arrays and their respective latitudes and longitudes and regrids 
     both arrays to be on the same grid. It then plots them and saves the plot, masking the areas where the grid does not overlap."""
     #NOTE!!!!!!!! Here arr1 should be the model data and arr2 should be the NSIDC data (this is because the model has coarser resolution
-    #in the area that we are plotting over. 
-    fig,ax=plt.subplots(figsize=(8,8))
+    # in the area that we are plotting over. 
+
+    #blank out the areas in 
+    dpalette=plt.cm.RdBu_r
+    dpalette.set_bad(alpha=0.0)
+
+    fig,ax=plt.subplots()
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawmapboundary(fill_color='grey')
-    
-    #projecting both arrays onto grid
-    #make mesh grid of latlons for plotting
+
+    # make mesh grid of latlons for plotting (use arr1 if it has coarser res, else use arr2 here)
     ny=arr1.shape[0]; nx=arr1.shape[1]
-    print("shape of model data is {},{}".format(nx,ny))
     glons,glats = m.makegrid(nx,ny)
 
-    #interp data of real world to this reg grid 
-    gdata1 = griddata((lons1[~arr1.mask].ravel(),lats1[~arr1.mask].ravel()),
-                    arr1[~arr1.mask].ravel(),(glons,glats),method='cubic')
+    # regridding arr1, where lats1, lons1 are 2D arrays with lat and lon for cells in arr1 and glons,glats are the lats/lons for the grid you want to use
+    # be sure to only regrid the data where there is no mask (assuming land is masked) - will regrid the mask separately
+    gdata1 = griddata((lons1[~arr1.mask].ravel(),lats1[~arr1.mask].ravel()),arr1[~arr1.mask].ravel(),(glons,glats),method='cubic')
+
+    # arr2
+    gdata2 = griddata((lons2[~arr2.mask].ravel(),lats2[~arr2.mask].ravel()),arr2[~arr2.mask].ravel(),(glons,glats),method='cubic')
+
+    # ttest for the 2 datasets, assuming time is in 0th dimension (else change axis argument)
+    (ttest,pval) = stats.ttest_rel(gdata1,gdata2,axis=0)
+    print(arr1.mask)
+    print(np.mean(pval))
+
     # make mask of missing data (ie land)
     mask = np.zeros((ny,nx))
-    mask[arr1.mask] = 1
-    gmask = griddata((lons1.ravel(),lats1.ravel()),mask.ravel(),
-                    (glons,glats),method='cubic')
+    #pval = np.ma.asarray(pval)
+    mask[np.ma.logical_or(arr1.mask,pval>0.05)] = 1  
+    gmask = griddata((lons1.ravel(),lats1.ravel()),mask.ravel(),(glons,glats),method='cubic')
+    garr1 = np.ma.masked_array(gdata1,gmask>0.5) # masked, gridded array of arr
 
-    pdat = np.ma.masked_array(gdata1,gmask>0.5) # masked, gridded array
-
-    cs=m.pcolormesh(glons,glats,pdat,latlon=True)
+    # plot difference between the 2 datasets, masking out everywhere where the difference is not significant
+    cs=m.pcolormesh(glons,glats,gdata1-gdata2,latlon=True,
+    cmap=dpalette)
 
     m.drawcoastlines()
     cbar = m.colorbar(cs,location='bottom',pad="5%",extend='both')
+    cbar.set_label('[0-1]') # or use % if *100
+    ax.set_title("test title")
+    fig.savefig("/home/ben/Desktop/test.png")
     plt.show()
+    plt.close(fig)
+
 
 
 if __name__=="__main__":
     models = ["u-au866","u-av231"]
-    #month_map_mean_main(models[0],2,"aice","/home/ben/Desktop/summer2019/plotlims",True)
+#month_map_mean_main(models[0],2,"aice","/home/ben/Desktop/summer2019/plotlims",True)
