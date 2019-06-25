@@ -17,5 +17,22 @@ if __name__=="__main__":
     print np.shape(lons), np.shape(lats), np.shape(aice)
     #grabbing model data
     lons_model,lats_model,aice_model = grab.ice_area_map_mean("/media/windowsshare","u-at053",2)  
+
+    inds = (lons_model>180.)
+
+    lons_new = lons_model
+    lons_new[inds] = lons_model[inds] - 360.0
+
     #chucking into plot function 
-    plot.regrid(aice_model,lats_model,lons_model,aice,lats,lons)    
+    plot.regrid(aice_model,lats_model,lons_new,aice,lats,lons)    
+
+    #plot grabbed things to test 
+    """
+    fig, ax = plt.subplots(figsize=(8, 8))
+    m = Basemap(resolution='h', projection='spstere',
+                lat_0=-90, lon_0=-180, boundinglat=-55)
+    m.drawmapboundary(linewidth=1)
+    cm = m.pcolormesh(lons, lats, aice, latlon=True,cmap="jet")
+    cbar = m.colorbar(cm, location='bottom', pad="5%")
+    plt.show()
+    """
