@@ -421,46 +421,39 @@ def month_map_data(path, modelname, monthnum, varname):
     os.chdir("../../../../")
     os.chdir("{}/{}/{}".format(path, modelname, "ice"))
     monthcount = 0
-    varlist = []
-    filenames = []
     for filename in (sorted(os.listdir('./'))):
         # grabbing month from filename
         monthstr = filename[19:21]
         # we only want the files of a certain month given by monthnum
         if int(monthstr) == monthnum:
             print "grabbing {}".format(filename)
-            filenames.append(filename)
             testdata = Dataset(filename)
-            if monthcount == 0:  # dims of aice dont change
+            if monthcount == 0:  # latitude and longitude of grid cells does not change... only want bottom part of world data (i.e want 125x360 slice. (so that all data are the same dimensions when we do the mean)
                 lats = np.ma.array(
-                    testdata.variables['TLAT'][:, :], dtype='float64')
-                cond = lats < -50.0
-                # now grabbing the variable we want
+                    testdata.variables['TLAT'][:,:], dtype='float64')
                 lons = np.ma.array(
-                    testdata.variables['TLON'][:, :], dtype='float64')[cond]
+                    testdata.variables['TLON'][:,:], dtype='float64')
                 myvar = np.ma.squeeze(np.ma.array(
-                    testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
-                lats = lats[cond]
-                # size should be the same for all of them...
-                size = myvar.shape[0]
-                # now reshaping to be proper size
-                myvar = np.reshape(myvar, [int(size/360.0), 360])
-                lats = np.reshape(lats, [int(size/360.0), 360])
-                lons = np.reshape(lons, [int(size/360.0), 360])
-                varlist.append(myvar)
+                    testdata.variables[varname][:,:], dtype='float64'))
+                lats = lats[0:125,:]
+                lons = lons[0:125,:]
+                myvar = myvar[0:125,:]
+                myvar_total = []  # making total myvar
+                myvar_total.append(myvar)
                 testdata.close()
                 monthcount += 1
             else:
                 myvar = np.ma.squeeze(np.ma.array(
-                    testdata.variables[str(varname)][:, :], dtype='float64'))[cond]
-                myvar = np.reshape(myvar, [int(size/360.0), 360])
-                varlist.append(myvar)
+                    testdata.variables[varname][:, :], dtype='float64'))
+                myvar = myvar[0:125,:]
+                myvar_total.append(myvar)
                 # making sure we don't have too many files open at once...
                 testdata.close()
                 monthcount += 1  # we have added the data for one month.
-
-    varlist = np.ma.asarray(varlist)
-    return lons, lats, varlist, filenames
+    #now taking mean of all datapoints
+    #first convert to np.ma array
+    myvar_total = np.ma.asarray(myvar_total)
+    return lons, lats, myvar_total
 
 def month_map_test(path, modelname,varname):
     os.chdir("../../../../")
@@ -493,13 +486,16 @@ def ice_area_map_mean(path, modelname, monthnum):
         if int(monthstr) == monthnum:
             print "grabbing {}".format(filename)
             testdata = Dataset(filename)
-            if monthcount == 0:  # latitude and longitude of grid cells does not change... also dims of myvar dont change
+            if monthcount == 0:  # latitude and longitude of grid cells does not change... only want bottom part of world data (i.e want 125x360 slice. (so that all data are the same dimensions when we do the mean)
                 lats = np.ma.array(
-                    testdata.variables['TLAT'][:, :], dtype='float64')
+                    testdata.variables['TLAT'][:,:], dtype='float64')
                 lons = np.ma.array(
-                    testdata.variables['TLON'][:, :], dtype='float64')
+                    testdata.variables['TLON'][:,:], dtype='float64')
                 aice = np.ma.squeeze(np.ma.array(
                     testdata.variables['aice'][:,:], dtype='float64'))
+                lats = lats[0:125,:]
+                lons = lons[0:125,:]
+                aice = aice[0:125,:]
                 icearea_total = []  # making total myvar
                 icearea_total.append(aice)
                 testdata.close()
@@ -507,7 +503,7 @@ def ice_area_map_mean(path, modelname, monthnum):
             else:
                 aice = np.ma.squeeze(np.ma.array(
                     testdata.variables['aice'][:, :], dtype='float64'))
-                #if the variable is not aice, set all sections where there is no ice to NaN as there should be no data here...
+                aice = aice[0:125,:]
                 icearea_total.append(aice)
                 # making sure we don't have too many files open at once...
                 testdata.close()

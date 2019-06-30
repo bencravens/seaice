@@ -538,15 +538,14 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
                     arr1[~arr1.mask].ravel(),(glons,glats),method='cubic')
     
     gdata2 = griddata((lons2[~arr2.mask].ravel(),lats2[~arr2.mask].ravel()),arr2[~arr2.mask].ravel(),(glons,glats),method='cubic')
-    
+    (ttest,pval) = stats.ttest_rel(gdata1,gdata2,axis=0)
+   
     # make mask of missing data (ie land)
     mask = np.zeros((ny,nx))
     mask[arr1.mask] = 1
     gmask = griddata((lons1.ravel(),lats1.ravel()),mask.ravel(),
                     (glons,glats),method='cubic')
-
-    pdat = np.ma.masked_array(gdata1-gdata2,gmask>0.5) # masked, gridded array
-
+    pdat = np.ma.masked_array(gdata1-gdata2,np.logical_or(gmask>0.5,pval>0.05)) # masked, gridded array
     cs=m.pcolormesh(glons,glats,pdat,latlon=True,cmap='seismic')
     plt.clim(-1.0,1.0)
     m.drawcoastlines()
@@ -555,8 +554,25 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
     plt.show()
     fig.savefig("/home/ben/Desktop/{}".format(modelname))
     plt.close()
-    
 
+def hist(modelname,monthnum,variable):
+    #just grab one cell of the variable
+    "want histogram plots for EVERY gridcell...."
+    for x in range(0,125,50):
+        for y in range(0,360,50):
+            print("saving plot {},{}".format(x,y))
+            sequence = []
+            fig,ax=plt.subplots(figsize=(8,8))
+            n, bins, patches = plt.hist(x=sequence, bins='auto', color='#0504aa',
+                                alpha=0.7, rwidth=0.85)
+            plt.grid(axis='y', alpha=0.75)
+            plt.xlabel(variable)
+            plt.ylabel('Frequency')
+            plt.title('Test Histogram for aice')
+            fig.savefig("/home/ben/Desktop/histplots/{}_{}_{}".format(modelname,x,y))
+            plt.close()
+            
+    
 if __name__=="__main__":
     models = ["u-au866","u-av231"]
 #month_map_mean_main(models[0],2,"aice","/home/ben/Desktop/summer2019/plotlims",True)
