@@ -419,7 +419,7 @@ def month_map_stddev(path, modelname, monthnum, varname):
 def month_map_data(path, modelname, monthnum, varname):
     """grabs and returns a stack of arrays for the value of varname for model modelname during a given month"""
     os.chdir("../../../../")
-    os.chdir("{}/{}/{}".format(path, modelname, "ice"))
+    os.chdir(path)
     monthcount = 0
     for filename in (sorted(os.listdir('./'))):
         # grabbing month from filename

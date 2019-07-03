@@ -11,6 +11,7 @@ from scipy import stats
 import os
 import sys
 from scipy.interpolate import griddata
+from mlxtend.evaluate import permutation_test
 
 ######## SPECIFIC DATA GRABBING FUNCTIONS ###############################
 
@@ -526,27 +527,8 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawmapboundary(fill_color='grey')
-    
-    #projecting both arrays onto grid
-    #make mesh grid of latlons for plotting
-    ny=arr1.shape[0]; nx=arr1.shape[1]
-    print("shape of model data is {},{}".format(nx,ny))
-    glons,glats = m.makegrid(nx,ny)
-
-    #interp data of real world to this reg grid 
-    gdata1 = griddata((lons1[~arr1.mask].ravel(),lats1[~arr1.mask].ravel()),
-                    arr1[~arr1.mask].ravel(),(glons,glats),method='cubic')
-    
-    gdata2 = griddata((lons2[~arr2.mask].ravel(),lats2[~arr2.mask].ravel()),arr2[~arr2.mask].ravel(),(glons,glats),method='cubic')
-    (ttest,pval) = stats.ttest_rel(gdata1,gdata2,axis=0)
-   
-    # make mask of missing data (ie land)
-    mask = np.zeros((ny,nx))
-    mask[arr1.mask] = 1
-    gmask = griddata((lons1.ravel(),lats1.ravel()),mask.ravel(),
-                    (glons,glats),method='cubic')
-    pdat = np.ma.masked_array(gdata1-gdata2,np.logical_or(gmask>0.5,pval>0.05)) # masked, gridded array
-    cs=m.pcolormesh(glons,glats,pdat,latlon=True,cmap='seismic')
+    grid_anom,glons,glats = process.regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr)
+    cs=m.pcolormesh(glons,glats,grid_anom,latlon=True,cmap='seismic')
     plt.clim(-1.0,1.0)
     m.drawcoastlines()
     cbar = m.colorbar(cs,location='bottom',pad="5%",extend='both')
@@ -558,20 +540,36 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
 def hist(modelname,monthnum,variable):
     #just grab one cell of the variable
     "want histogram plots for EVERY gridcell...."
-    for x in range(0,125,50):
-        for y in range(0,360,50):
-            print("saving plot {},{}".format(x,y))
-            sequence = []
-            fig,ax=plt.subplots(figsize=(8,8))
-            n, bins, patches = plt.hist(x=sequence, bins='auto', color='#0504aa',
-                                alpha=0.7, rwidth=0.85)
-            plt.grid(axis='y', alpha=0.75)
-            plt.xlabel(variable)
-            plt.ylabel('Frequency')
-            plt.title('Test Histogram for aice')
-            fig.savefig("/home/ben/Desktop/histplots/{}_{}_{}".format(modelname,x,y))
-            plt.close()
-            
+    cords = []
+    vals = []
+    test = variable[0]
+    for x in range(0,125):
+        for y in range(0,360):
+            try:
+                if test[x,y]>0.2: #just taking the points for where theres a decent amount of ice as this is where we want to compare 
+                    cords.append([x,y])
+                    vals.append(test[x,y])
+            except:
+                print("error")
+    for cord in cords[0:100]: # just taking some for plotting.. don't want to run out of memory 
+        x = cord[0]
+        y = cord[1]
+        data = []
+        means = []
+        for arr in variable:
+            value = arr[x,y]
+            data.append(value)
+            means.append(np.mean(np.asarray(data)))
+        means = np.asarray(means)
+        print("printing whole sequence\n{}".format(means))
+        fig,ax=plt.subplots(figsize=(8,8))
+        n, bins, patches = plt.hist(x=means, bins='auto', color='#0504aa',alpha=0.7, rwidth=0.85)
+        plt.grid(axis='y', alpha=0.75)
+        plt.xlabel(modelname)
+        plt.ylabel('Frequency')
+        plt.title('Test Histogram for aice mean upon repeated sampling')
+        fig.savefig("/home/ben/Desktop/histplots/{}_{}_{}".format(modelname,x,y))
+        plt.close()
     
 if __name__=="__main__":
     models = ["u-au866","u-av231"]

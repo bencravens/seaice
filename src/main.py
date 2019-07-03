@@ -13,19 +13,19 @@ from scipy.interpolate import griddata
 
 if __name__=="__main__":
     #grabbing NSIDC data
-    models = ["u-at053","u-au866","u-au872","u-au874","u-av231"]
+    #models = ["u-at053","u-au866","u-au872","u-au874","u-av231"]
+    models = ["u-at053"]
     for model in models:
         lons,lats,aice = grab.NSIDC_data("/media/windowsshare/NSIDC_ben/ice","2")
         print np.shape(lons), np.shape(lats), np.shape(aice)
         #grabbing model data
-        lons_model,lats_model,aice_model = grab.month_map_data("/media/windowsshare",model,2,"aice")  
+        lons_model,lats_model,aice_model = grab.ice_area_map_mean("/media/windowsshare",model,2)  
         inds = (lons_model>180.)
         lons_new = lons_model
         lons_new[inds] = lons_model[inds] - 360.0
-        plot.hist(model,2,aice_model)
 
         #chucking into plot function 
-        #plot.regrid(aice_model,lats_model,lons_new,aice,lats,lons,model,"February")    
+        plot.regrid(aice_model,lats_model,lons_new,aice,lats,lons,model,"February")    
 
     #plot grabbed things to test
     """
