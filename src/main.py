@@ -10,12 +10,14 @@ import sys
 import plot
 import netCDF4
 from scipy.interpolate import griddata
+from mlxtend.evaluate import permutation_test
 
 if __name__=="__main__":
     #grabbing NSIDC data
     #models = ["u-at053","u-au866","u-au872","u-au874","u-av231"]
     models = ["u-at053"]
     for model in models:
+        #JUST CALCULATING ANOMALY
         lons,lats,aice = grab.NSIDC_data("/media/windowsshare/NSIDC_ben/ice","2")
         print np.shape(lons), np.shape(lats), np.shape(aice)
         #grabbing model data
@@ -23,9 +25,14 @@ if __name__=="__main__":
         inds = (lons_model>180.)
         lons_new = lons_model
         lons_new[inds] = lons_model[inds] - 360.0
-
+        
+        #PRINTING TOTAL NUMBER OF POINTS THAT ARE NOT MASKED IN EITHER ARRAY
+        print np.sum(aice>0)
+        
         #chucking into plot function 
         plot.regrid(aice_model,lats_model,lons_new,aice,lats,lons,model,"February")    
+        
+        #now we want to do the permutation test on each gridcell... 
 
     #plot grabbed things to test
     """

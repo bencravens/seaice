@@ -104,7 +104,10 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
     gmask = griddata((lons1.ravel(),lats1.ravel()),mask.ravel(),
                     (glons,glats),method='cubic')
     pdat = np.ma.masked_array(gdata1-gdata2,gmask>0.5) # masked, gridded array
-    return pdat,glons,glats
+    return gdata1,gdata2,pdat,glons,glats
+
+def permutation():
+    pass 
 
 if __name__=="__main__":
     total_ice_diff("/media/windowsshare/","u-au866",2) 

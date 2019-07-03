@@ -527,7 +527,7 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
     m = Basemap(resolution='h', projection='spstere',
                 lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawmapboundary(fill_color='grey')
-    grid_anom,glons,glats = process.regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr)
+    arr1_regrid,arr2_regrid,grid_anom,glons,glats = process.regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr)
     cs=m.pcolormesh(glons,glats,grid_anom,latlon=True,cmap='seismic')
     plt.clim(-1.0,1.0)
     m.drawcoastlines()
