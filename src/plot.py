@@ -521,7 +521,6 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
     both arrays to be on the same grid. It then plots them and saves the plot, masking the areas where the grid does not overlap."""
     #NOTE!!!!!!!! Here arr1 should be the model data and arr2 should be the NSIDC data (this is because the model has coarser resolution
     # in the area that we are plotting over. 
-    
     #NEW VERSION
     fig,ax=plt.subplots(figsize=(8,8))
     m = Basemap(resolution='h', projection='spstere',

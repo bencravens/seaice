@@ -561,4 +561,11 @@ def NSIDC_data(path,month):
     #normalizing
     icemean = 1.0 / (np.max(icemean)) * icemean
 
-    return lons, lats, icemean
+    #now doing the same for icedata (stack of aice arrays....)
+    icedata_masked = []
+    for arr in icedata:
+        arr = np.ma.masked_where(arr>1500,arr)
+        arr = 1.0 / (np.max(arr)) * arr
+        icedata_masked.append(arr)
+        
+    return lons, lats, icedata_masked, icemean

@@ -106,8 +106,34 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
     pdat = np.ma.masked_array(gdata1-gdata2,gmask>0.5) # masked, gridded array
     return gdata1,gdata2,pdat,glons,glats
 
-def permutation():
-    pass 
+def permutation_test(arraystack_1, arraystack_2):
+    #takes two n*m*t arrays, where the n*m represents a grid of variables and the t represents that area of gridcells as it changes in time. 
+    [x,y] = np.shape(arraystack_1[0])
+    pvals = np.zeros([x,y])
+    count = 0
+    total = x*y
+    for i in range(0,x):
+        for j in range(0,y):
+            t = time.time()
+            NSIDC_sample = [] 
+            model_sample = []
+            for arr in arraystack_1:
+                model_sample.append(arr[i,j])
+            for arr in arraystack_2:
+                NSIDC_sample.append(arr[i,j])
+            NSIDC_sample = np.asarray(NSIDC_sample)
+            model_sample = np.asarray(model_sample)
+            print "doing permutation test {}/{}".format(count,total)
+            pvals[i,j] = permutation_test(NSIDC_sample,model_sample,
+                                            method='approximate',
+                                            num_rounds=1000,
+                                            seed=0)
+            elapsed = time.time() - t
+            print pvals[i,j]
+            print "time required to do one operation is {}".format(elapsed)
+            count += 1
+    np.save('/home/ben/Desktop/pvals.npy',pvals)
+    print "permutation_test done"
 
 if __name__=="__main__":
     total_ice_diff("/media/windowsshare/","u-au866",2) 
