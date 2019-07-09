@@ -87,28 +87,20 @@ if __name__=="__main__":
         #loaded arrays. Lets now plot them, masking the areas where there is no significance
         print "testing"
         print "making grid to plot on"
-        m = Basemap(resolution='h', projection='spstere',
-                lat_0=-90, lon_0=-180, boundinglat=-55)
-        [nx,ny] = np.shape(aice_model)
-        glons,glats = m.makegrid(nx,ny)
-        
-        #now we just want to take the mean anomaly
-        aice_model_regrid = np.mean(aice_model_stack_regrid,axis=0)
-        aice_regrid = np.mean(aice_stack_regrid,axis=0)
-        anom = aice_regrid - aice_model_regrid
-        
+        aice_model, aice_NSIDC, anom, glons, glats = process.regrid(aice_model,lats_model,lons_model,aice,lats,lons,"u-at053","2")
         #mask the values where the pvalue is >0.05 (insignificant) or == 0 (masked entry)
         anom = np.ma.masked_where(pvals>0.05,anom)
-        anom = np.ma.masked_where(pvals==0,anom)
+        m = Basemap(resolution='h', projection='spstere',lat_0=-90, lon_0=-180, boundinglat=-55)
         
         #plot this
+        print "anom, glons, glats"
+        print np.shape(anom), np.shape(glons), np.shape(glats)
         cs=m.pcolormesh(glons,glats,anom,latlon=True,cmap='seismic')
         plt.clim(-1.0,1.0)
         m.drawcoastlines()
         cbar = m.colorbar(cs,location='bottom',pad="5%",extend='both')
         plt.title("Mean ice concentration anomaly\n Between model scheme {} and NSIDC data in the month of {}".format("u-at053","2"))
         plt.show()
-        fig.savefig("/home/ben/Desktop/anom_perm")
         plt.close()
         
         

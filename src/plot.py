@@ -523,8 +523,7 @@ def regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr):
     # in the area that we are plotting over. 
     #NEW VERSION
     fig,ax=plt.subplots(figsize=(8,8))
-    m = Basemap(resolution='h', projection='spstere',
-                lat_0=-90, lon_0=-180, boundinglat=-55)
+    m = Basemap(resolution='h', projection='spstere',lat_0=-90, lon_0=-180, boundinglat=-55)
     m.drawmapboundary(fill_color='grey')
     arr1_regrid,arr2_regrid,grid_anom,glons,glats = process.regrid(arr1,lats1,lons1,arr2,lats2,lons2,modelname,monthstr)
     cs=m.pcolormesh(glons,glats,grid_anom,latlon=True,cmap='seismic')
